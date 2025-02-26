@@ -1,0 +1,137 @@
+{
+	"pages": [
+		//pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
+	
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "社区"
+			}
+		},
+		{
+			"path" : "pages/my/my",
+			"style" : 
+			{
+				"navigationBarTitleText" : "我的"
+			}
+		},
+		{
+			"path" : "pages/pinia/pinia",
+			"style" : 
+			{
+				"navigationBarTitleText" : "pinia"
+			}
+		},
+
+		{
+			"path" : "pages/material/material",
+			"style" : 
+			{
+				"navigationBarTitleText" : "资料",
+				"onReachBottomDistance": 20
+			}
+		},
+		{
+			"path" : "pages/market/market",
+			"style" : 
+			{
+				"navigationBarTitleText" : "闲置集市",
+				"enablePullDownRefresh": true
+
+			}
+		},
+		{
+			"path" : "pages/market/publish/publish",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/publishPost/publishPost",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/index/communityLife/communityLife",
+			"style" : 
+			{
+				"navigationBarTitleText" : "社团生活",
+				"navigationBarBackgroundColor": "#68e7a4"
+			}
+		},
+		{
+			"path" : "pages/index/PostBar/PostBar",
+			"style" : 
+			{
+				"navigationBarTitleText" : "帖子",
+				"navigationBarBackgroundColor": "#68e7a4"
+			}
+		},
+		{
+			"path" : "pages/my/myInfo/myInfo",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/postContent/postContent",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/text/text",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "",
+		"navigationBarBackgroundColor": "#F8F8F8",
+		"backgroundColor": "#F8F8F8"
+	},
+	"tabBar": {
+		"color": "#000",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"iconPath": "/static/tabBar/community.png",
+				"selectedIconPath": "/static/tabBar/community-h.png",
+				"text": "社区"
+		    },
+			{
+				"pagePath": "pages/market/market",
+				"iconPath": "/static/tabBar/market.png",
+				"selectedIconPath": "/static/tabBar/market-h.png",
+				"text":"集市"
+			},
+			{
+				"pagePath": "pages/publishPost/publishPost",
+				"iconPath": "/static/tabBar/publish.png",
+				"selectedIconPath": "/static/tabBar/publish.png",
+				"text": "发布"
+			},
+			{
+				"pagePath": "pages/material/material",
+				"iconPath": "/static/tabBar/material.png",
+				"selectedIconPath": "/static/tabBar/material-h.png",
+				"text":"资料"
+			},
+			{
+				"pagePath": "pages/my/my",
+				"iconPath": "/static/tabBar/my.png",
+				"selectedIconPath": "/static/tabBar/my-h.png",
+				"text":"我的"
+			}
+		]
+	},
+	"uniIdRouter": {}
+}

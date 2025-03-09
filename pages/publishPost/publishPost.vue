@@ -38,9 +38,9 @@
 					trigger: 'blur'
                 },
                 {
-                    minLength: 5,
-                    maxLength: 31,
-                    errorMessage: '标题长度在5-31个字之间'
+                    minLength: 2,
+                    maxLength: 20,
+                    errorMessage: '标题长度在2-20个字之间'
                 }
             ]
         },
@@ -61,33 +61,36 @@
 	//添加图片
     const addPicture = async (e) => {
 		console.log(e);
-		await uni.uploadFile({
-			url: baseUrl + '/api/v1/community/post/image',
-			method: 'post',
-			header: {
-				"Content-Type": "application/json" , 
-			},
-			filePath: e.tempFilePaths[0],
-			name: 'image',
-			formData: {
-				userId: uni.getStorageSync('userId')
-			},
-			success: (res) => {
-				console.log(JSON.parse(res.data));
-			    let newarr = JSON.parse(res.data).data
-				newarr.uuid = e.tempFiles[0].uuid;
-				console.log(newarr);				
-				arrPicture.value.push(newarr)
-				console.log(arrPicture.value);
-			},
-			fail: (err) => {
-				console.log(err);
-				uni.showToast({
-					title: '上传失败,请重新上传',
-					icon: 'error'
-				})
-			}
-		})
+		//循环e.temFilePaths上传到服务器
+		for (let i = 0; i < e.tempFilePaths.length; i++) {
+			await uni.uploadFile({
+				url: baseUrl + '/api/v1/community/post/image',
+				method: 'post',
+				header: {
+					"Content-Type": "application/json" , 
+				},
+				filePath: e.tempFilePaths[i],
+				name: 'image',
+				formData: {
+					userId: uni.getStorageSync('userId')
+				},
+				success: (res) => {
+					console.log(JSON.parse(res.data));
+				    let newarr = JSON.parse(res.data).data
+					newarr.uuid = e.tempFiles[0].uuid;
+					console.log(newarr);				
+					arrPicture.value.push(newarr)
+					console.log(arrPicture.value);
+				},
+				fail: (err) => {
+					console.log(err);
+					uni.showToast({
+						title: '上传失败,请重新上传',
+						icon: 'error'
+					})
+				}
+			})
+		}
     }
 	//删除选择的图片
 	const delPicture = async (e) =>{
@@ -146,10 +149,10 @@
 					})
 					setTimeout(() => {
 						uni.showTabBar()
-						uni.switchTab({
+						uni.reLaunch({
 							url: '/pages/index/index'
 						})
-					}, 300)
+					}, 500)
 
             }).catch((err) => {
                 console.log("输入不合法:", err)
@@ -174,7 +177,7 @@
 				        confirm-type="done"
 				        :input-border="false"
 				        v-model="formData.title"
-				        placeholder="请输入完整帖子标题(5-31个字)"
+				        placeholder="请输入完整帖子标题(2-20个字)"
 				    />
 				</uni-forms-item>
 			</view>

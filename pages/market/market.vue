@@ -5,11 +5,31 @@ onLoad(async ()=>{
 })
 const postId = ref('')
 const limit = ref(6)
+const typeIndex = ref('')
 const activeFilter = ref('全部')
+const change = (e) =>{
+	// if(e.detail.value[0]==='1'){
+	// 	status.value = 0
+	// }else{
+	// 	status.value = ''
+	// }
+	
+}
 // 设置激活的筛选条件
-const setActiveFilter = (item) => {
+const setActiveFilter = (item,index) => {
 	activeFilter.value = item;
+	index-=1;
 	console.log(item);
+	console.log(index);
+	if(index!==-1){
+		typeIndex.value = index
+	}else{
+		typeIndex.value = ''
+	}
+	postId.value = ''
+	comPost.value = []
+	noData.value = false
+	getPostList()
 }
 const goToPublish = () => {
 	uni.redirectTo({
@@ -23,7 +43,7 @@ const getPostList = async()=>{
 		userId:uni.getStorageSync('userId'),
 		postId:postId.value,
 		limit:limit.value,
-		type:'',
+		type:typeIndex.value,
 		status:0
 	})
 	console.log(res);
@@ -33,9 +53,17 @@ const getPostList = async()=>{
 }
 const types=['出售','求购','免费赠送']
 // 商品列表数据
-const comPost = ref([
-    
-]);
+const comPost = ref([]);
+//计算价格
+const calPrice = (price) => {
+	if(price<10000){
+		return price
+	}else if(price<999999){
+		return (price/10000).toFixed(1)+'w'
+	}else{
+		return (price/10000)+'+'
+	}
+}
 const paging = ref()
 const queryList = () =>{
 	setTimeout(() =>{
@@ -66,6 +94,12 @@ const scrolltolower = async () =>{
 	const res = await getPostList()
 	isRefreshing.value = false
 }
+const gotoMarketContent = (tradePostId) =>{
+	console.log(tradePostId);
+	uni.navigateTo({
+		url:'/pages/market/marketContent/marketContent?tradePostId='+tradePostId
+	})
+}
 </script>
 
 <template>
@@ -81,13 +115,15 @@ const scrolltolower = async () =>{
 		    	    :key="index"
 		    	    class="filter-item"
 		    		:class="{active : activeFilter === item}"
-		    	    @tap="setActiveFilter(item)"
+		    	    @tap="setActiveFilter(item,index)"
 		    	>
-		    	    {{ item }}
+		    	  <text>{{item}}</text>
 		    	</view>
 		    	<view class="filter-bar-right">
-		    		<checkbox style="transform:scale(0.7);"></checkbox>
-		    		<text>只看本校</text>
+					<checkbox-group @change="change">
+						<checkbox :value="1" style="transform:scale(0.7);"></checkbox>
+						<text>只看本校</text>
+					</checkbox-group>
 		    	</view>
 		    </view>
 		</template>
@@ -97,7 +133,7 @@ const scrolltolower = async () =>{
 				    <!-- 瀑布流布局列表 -->
 				    <view class="pubuBox">
 				      <view class="pubuItem">
-				        <view class="item-masonry" v-for="(item, index) in comPost" :key="index">
+				        <view class="item-masonry" v-for="(item, index) in comPost" :key="index" @tap="gotoMarketContent(item.tradePostId)">
 				          <image style="height: 450rpx;" v-if="item.image" :src="item.image" mode="aspectFill"></image>
 						  <view v-else class="noimg">
 							  <text>{{item.content}}</text>
@@ -106,7 +142,7 @@ const scrolltolower = async () =>{
 				            <!-- 这是没有高度的父盒子（下半部分） -->
 				            <view class="listtitle1">{{ item.content }}</view>
 				            <view class="listtitle2">
-				              <text class="listtitle2son">￥{{ item.price }}</text>
+				              <text class="listtitle2son">￥{{ calPrice(item.price) }}</text>
 							  <view class="buy">{{types[item.type]}}</view>
 				            </view>
 				          </view>
@@ -138,6 +174,7 @@ const scrolltolower = async () =>{
 	.filter-item{
 	   padding: 0 27rpx;
 	   padding-bottom: 10rpx;
+	   transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
 	}
 	.filter-bar-right {
 	    margin-left: auto;
@@ -146,10 +183,13 @@ const scrolltolower = async () =>{
 	.filter-item.active {
 	  border-bottom: 2px solid rgb(11, 203, 136);
 	  color: rgb(11, 203, 136);
+	  transform: translateY(-4rpx);
 	}
+	
+	
 	.floating-button {
 	  position: fixed;
-	  bottom: 40rpx;
+	  bottom: 20rpx;
 	  left: 50%;
 	  transform: translateX(-50%);
 	  width: 300rpx;

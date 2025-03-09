@@ -15,6 +15,9 @@ const loginResultCopy = ref()
 const handleLogin = async () => {
 	//登录成功后再点击头像不会弹出登录框
   if(!uni.getStorageSync('refreshToken')){
+	  uni.showLoading({
+	  	title: '加载中'
+	  })
 	  try{
 		  // 微信登录获取 code
 		  const loginRes = await new Promise((resolve, reject) => {
@@ -30,6 +33,7 @@ const handleLogin = async () => {
 		  console.log(loginResult);
 		  userId.value = loginResult.data.userId
 		  loginResultCopy.value = loginResult.data
+		  uni.hideLoading()
 		  //如果已经有数据则直接登录
 		  if(loginResult.data.userName && loginResult.data.avatar){
 			  user.value.nickname = loginResult.data.userName
@@ -75,22 +79,7 @@ const submit = async () => {
     })
     return
   }
-  // try {
-     // 微信登录获取 code
-  //   const loginRes = await new Promise((resolve, reject) => {
-  //     uni.login({
-  //       provider: 'weixin',
-  //       success: resolve,
-  //       fail: reject
-  //     })
-  //   })
 
-  //  console.log(loginRes.code)
-
- //    调用 login 接口，获取 userId
- //    const loginResult = await login(loginRes.code)
-	// console.log(loginResult);
- //    userId.value = loginResult.data.userId
 	//上传头像图片
 	console.log(userId.value);
 	console.log(avatar.value);
@@ -171,6 +160,21 @@ const gotoMyInfo = () => {
     url: '/pages/my/myInfo/myInfo'
   })
 }
+const gotoMyFavorite = () =>{
+	uni.navigateTo({
+		url: '/pages/my/myFavorite/myFavorite'
+	})
+}
+const gotoMyPost = () => {
+	uni.navigateTo({
+		url: '/pages/my/myPost/myPost'
+	})
+}
+const gotoMyMarket = () =>{
+	uni.navigateTo({
+		url:'/pages/my/myMarket/myMarket'
+	})
+}
 const loginOut = () => {
     uni.showModal({
     	title:'提示',
@@ -218,49 +222,54 @@ onLoad(()=>{
     <view class="menu">
         <view @tap="gotoMyInfo()" class="menu-item" hover-class="hover">
 			<view class="left">
-				<uni-icons type="person" size="22" color="#28b389"></uni-icons>
+				<uni-icons type="person-filled" size="22" color="#2bc192"></uni-icons>
 				<view class="text">个人信息</view>
 			</view>
 			<view class="right">
 				<view class="arrow">&#x203A;</view>
 			</view>
         </view>
-        <view class="menu-item" hover-class="hover">
+        <view class="menu-item" hover-class="hover" @tap="gotoMyFavorite()">
 			<view class="left">
-				<uni-icons type="star" size="22" color="#28b389"></uni-icons>
+				<uni-icons type="star-filled" size="22" color="#2bc192"></uni-icons>
 				<view class="text">记录与收藏</view>
 			</view>
             <view class="arrow">&#x203A;</view>
         </view>
-        <view class="menu-item" hover-class="hover">
+        <view class="menu-item" hover-class="hover" @tap="gotoMyPost()">
 			<view class="left">
-				<uni-icons type="chat" size="22" color="#28b389"></uni-icons>
+				<uni-icons type="chat-filled" size="22" color="#2bc192"></uni-icons>
 				<view class="text">我的帖子</view>
 			</view>
             <view class="arrow">&#x203A;</view>
         </view>
+		<view class="menu-item" hover-class="hover" @tap="gotoMyMarket()">
+			<view class="left">
+				<uni-icons type="cart-filled" size="22" color="#2bc192"></uni-icons>
+				<view class="text">我的集市</view>
+			</view>
+		    <view class="arrow">&#x203A;</view>
+		</view>
 	</view>
 	<view class="menu">
         <view class="menu-item" hover-class="hover">
 			<view class="left">
-				<uni-icons type="paperplane" size="22" color="#28b389"></uni-icons>
+				<uni-icons type="headphones" size="22" color="#2bc192"></uni-icons>
 				<view class="text">建议与反馈</view>
 			</view>
             <view class="arrow">&#x203A;</view>
+			<button open-type="contact"></button>
         </view>
         <view class="menu-item" hover-class="hover" @tap="loginOut()">
 			<view class="left">
-				<uni-icons type="minus" size="22" color="#28b389"></uni-icons>
+				<uni-icons type="minus-filled" size="22" color="#2bc192"></uni-icons>
 				<view class="text">退出登录</view>
 			</view>
             <view class="arrow">&#x203A;</view>
         </view>
     </view>
 
-    <!-- 清除缓存 -->
-    <view class="clear-cache">
-      <text>清除缓存</text>
-    </view>
+  
 	
 	<uni-popup ref="popup" type="bottom" :mask-click="false" background-color="#fff1f6" border-radius="10px 10px 0 0">
 		<view class="pop_tip">请输入你的昵称和头像</view>
@@ -287,7 +296,9 @@ onLoad(()=>{
   height: 100vh;
   
 }
-
+.hover {
+	background-color: #f5f5f5;
+}
 /* 顶部个人信息区域 */
 .profile {
   background:
@@ -323,7 +334,7 @@ onLoad(()=>{
   margin: 0 auto;
   margin-top: 20rpx;
   border: 1px solid #eee;
-  border-radius: 10rpx;
+  border-radius: 18rpx;
   box-shadow: 0 0 30rpx rgba(0,0,0,0.05);
   background-color: #ffffff;
 }
@@ -332,17 +343,30 @@ onLoad(()=>{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20rpx;
   padding: 25rpx 20rpx;
   border-bottom: 1px solid #eee;
   font-size: 32rpx;
+  position: relative;
   .left{
 	  display: flex;
 	  align-items: center;
 	  .text{
-		  margin-left: 5rpx;
+		  margin-left: 10rpx;
 		  color: #555;
+		  margin-bottom: 2rpx;
 	  }
+  }
+  .arrow {
+    font-size: 40rpx;
+    color: #aaa;
+  }
+  button{
+	  position: absolute;
+	  top: 0;
+	  left: 0;
+	  height: 102rpx;
+	  width: 100%;
+	  opacity: 0;
   }
 }
 
@@ -350,22 +374,6 @@ onLoad(()=>{
   border-bottom: none;
 }
 
-
-.arrow {
-  font-size: 40rpx;
-  color: #aaa;
-}
-
-/* 清除缓存 */
-.clear-cache {
-  margin-top: 20rpx;
-  padding: 20rpx;
-  background-color: #ffffff;
-  font-size: 30rpx;
-  color: #333333;
-  text-align: center;
-  font-weight: 700;
-}
 
 .pop_tip{
 	font-size: 33rpx;

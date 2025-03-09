@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import {apigetPostList,apiPostLike,apiPostCollect} from '../../api/post.js'
 import { login } from '../../api/user.js';
 onLoad(()=>{
@@ -21,8 +21,9 @@ const gotoPostBar = () => {
 };
 const activeFilter = ref('全部');
 const scrollTop = ref(0);  // 用于记录滚动的位置
+const oldScrollTop = ref(0)
 const fixedTop = ref(false); // 判断是否固定
-
+const showTopButton = ref(false); // 控制按钮显示状态
 // 设置激活的筛选条件
 const setActiveFilter = (item) => {
     activeFilter.value = item;
@@ -31,10 +32,18 @@ const setActiveFilter = (item) => {
 
 // 监听滚动事件
 const onScroll = (e) => {
-    scrollTop.value = e.detail.scrollTop;
+    oldScrollTop.value = e.detail.scrollTop;
     // 如果滚动位置超过一定值，固定"top"
-    fixedTop.value = scrollTop.value > 200;
+    fixedTop.value = oldScrollTop.value > 200;
+	showTopButton.value = oldScrollTop.value > 300; // 滚动超过300rpx显示按钮
 };
+//公告
+const announcement = [
+	'1、deepseek满血版上线莞工？！',
+	'2、北街巴萨客着火！鼠鼠都被烧焦了',
+	'3、开学啦！',
+	'4、我头发怎么快掉光了'
+]
 //帖子数据
 const post = ref([
 
@@ -168,7 +177,6 @@ const toggleText = (postId) => {
 
 // 截取文本到指定长度
 const truncatedText = (text, length = 100) => {
-  // return text.length > length ? text.slice(0, length) : text;
   return text.slice(0,length)
 };
 
@@ -247,7 +255,6 @@ const queryList = () =>{
 			}).then(res=>{
 				console.log(res);
 				paging.value.complete(res.data);
-				console.log(paging.value);
 				if(limit.value>res.data.length) noData.value = true
 				isLiking.value = false
 				isStaring.value = false
@@ -255,9 +262,22 @@ const queryList = () =>{
 				paging.value.complete(false);
 			})
 	},300)
-	
 }
-
+const isLaunching = ref(false); // 触发火箭动画
+const onTop = () =>{
+	 isLaunching.value = true; // 触发火箭动画
+	 setTimeout(() => {
+	    scrollTop.value = oldScrollTop.value;
+	    nextTick(() => {
+	      scrollTop.value = 0;
+	    });
+	
+	    // 火箭动画结束后重置状态
+	    setTimeout(() => {
+	      isLaunching.value = false;
+	    }, 600);
+	  }, 100);
+}
 </script>
 
 <template>
@@ -266,7 +286,7 @@ const queryList = () =>{
 		   <custom-refresher :status="refresherStatus" />
 	   </template>
 	   <view class="index">
-	   	  <scroll-view scroll-y style="height: calc(100vh);" @scroll="onScroll" @scrolltolower="scrolltolower">
+	   	  <scroll-view scroll-y :scroll-top="scrollTop" style="height: calc(100vh);" @scroll="onScroll" @scrolltolower="scrolltolower">
 	   	        <view class="header">
 	   	            <view class="btn" @tap="gotoPostBar()">帖吧</view>
 	   	            <view class="btn" @tap="gotoCommunityLife()">社团生活</view>
@@ -275,13 +295,13 @@ const queryList = () =>{
 	   	        <view class="top" :class="{ fixed: fixedTop }">
 	   	            <view class="announce">
 	   	                <view class="left">
-	   	                    <text>本校</text>
-	   	                    <text>十大</text>
+	   	                    <text>本公</text>
+	   	                    <text>校告</text>
 	   	                </view>
 	   	                <view class="right">
 	   	                    <swiper vertical autoplay interval="2700" duration="2000" circular>
-	   	                        <swiper-item v-for="item in post" :key="item.discussPostId">
-	   	                            公告内容啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊
+	   	                        <swiper-item v-for="item in announcement" >
+	   	                            <text class="announceText">{{item}}</text>
 	   	                        </swiper-item>
 	   	                    </swiper>
 	   	                </view>
@@ -295,7 +315,11 @@ const queryList = () =>{
 	   	                    :class="{ active: activeFilter === item }"
 	   	                    @tap="setActiveFilter(item)"
 	   	                >
-	   	                    {{ item }}
+	   	                    <transition name="slide-fade">
+	   	                        <view v-if="activeFilter === item"><text>{{ item }}</text></view>
+	   	                        <view v-else><text>{{ item }}</text></view>
+	   	                    </transition>
+							
 	   	                </view>
 	   	            </view>
 	   	        </view>
@@ -304,12 +328,12 @@ const queryList = () =>{
 	   	  		    <view class="userinfo">
 	   	  		    	<image class="avatar" :src="item.userAvatar || '../../static/avatar0.png'" mode="aspectFill"></image>
 	   	  		    	<view class="userName-title">
-	   	  		    		<view class="userName">{{item.userName}}</view>
+	   	  		    		<view class="userName"><text>{{item.userName}}</text></view>
 	   	  		    		<text class="title">{{item.title}}</text>
 	   	  		    	</view>
 	   	  		    </view>
 	   	  		    <view class="content" >
-	   	  		    	<text v-if="isTextExpanded(item.discussPostId) || item.content.length <= 100">{{ item.content }}</text>
+	   	  		    	<text v-if="isTextExpanded(item.discussPostId) || item.content.length <= 100" >{{ item.content }}</text>
 	   	  		    	<text v-else>{{ truncatedText(item.content) }}...</text>
 	   	  		    	<view v-if="item.content.length>100" class="toggle-btn" @tap.stop="toggleText(item.discussPostId)">
 	   	  		    	    <text>{{ isTextExpanded(item.discussPostId) ? '收起' : '展开' }}</text>
@@ -364,7 +388,11 @@ const queryList = () =>{
 				<view v-if="noData || post.length>0">
 					<uni-load-more :status="noData?'noMore':'loading'"></uni-load-more>
 				</view>
+				<view class="float" @tap="onTop()" :style="{ opacity: showTopButton ? 1 : 0 }">
+					<view class="item"><image class="huojian" src="../../static/火箭.png" :class="{ launching: isLaunching }"></image></view>
+				</view>
 	   	    </scroll-view>
+			
 	   </view>
    </z-paging>
    <uni-popup ref="popup" type="bottom" border-radius="8rpx 8rpx 0 0" >
@@ -380,6 +408,40 @@ const queryList = () =>{
     background-color: #f5f5f5;
     height: 100%;
 	font-size: 28rpx;
+   .float{
+	   position: fixed;
+	   right: 30rpx;
+	   bottom: 25rpx;
+	    transition: opacity 0.4s ease-in-out;
+	   .item{
+		    width: 105rpx;
+		    height: 105rpx;
+		    background-color: #5cc280;
+		    opacity: 0.9;
+		    border-radius: 50%;
+		    display: flex;
+		    justify-content: center;
+		    align-items: center;
+		    color: #fff;
+		    font-size: 28rpx;
+		    border: 1px solid #eee;
+		    box-shadow: 0 5rpx 10rpx rgba(0, 0, 0, 0.2);
+		    transition: transform 0.2s ease-in-out;
+			.huojian{
+				width: 50rpx;
+				height: 50rpx;
+				 transition: transform 0.6s ease-in-out, opacity 0.6s ease-in-out;
+			}
+			 /* 火箭升空动画 */
+			    .launching {
+			      transform: translateY(-700rpx) scale(0.5);
+			      opacity: 0;
+			    }
+	   }
+	   &:active .item {
+	       transform: scale(0.8);
+	     }
+   }
 }
 
 .header {
@@ -390,9 +452,10 @@ const queryList = () =>{
 }
 
 .btn {
+	margin-top: 20rpx;
     width: 250rpx;
-    height: 90rpx;
-    line-height: 90rpx;
+    height: 100rpx;
+    line-height: 100rpx;
     text-align: center;
     border-radius: 20rpx;
 	color: #fff;
@@ -400,12 +463,17 @@ const queryList = () =>{
     font-weight: 600;
     // background: linear-gradient(to top right, #57b87a, #b5f9c8);
 	background: linear-gradient(to bottom right, #46e769,20%, #8acfb2);
-	
+	transition: transform 0.2s ease-in-out;
+	//按住按钮后缩小
+	&:active {
+	    transform: scale(0.9);
+	  }
 }
 
 .announce {
     display: flex;
     padding: 20rpx 30rpx;
+	
 }
 
 .left {
@@ -437,6 +505,10 @@ const queryList = () =>{
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+			.announceText{
+				font-size: 28rpx;
+				color: red;
+			}
         }
     }
 }
@@ -452,13 +524,22 @@ const queryList = () =>{
     font-size: 28rpx;
     height: 28rpx;
     line-height: 28rpx;
+	transition: all 0.3s ease-in-out;
 }
 
 .filter-item.active {
     color: #fff;
-    background-color: #57b87a;
+    background-color: #5cc280;
     border-radius: 10rpx;
+	 transform: translateY(-7rpx); /* 选中的项上移 */
+	 box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
 }
+/* 滑动+渐变 过渡动画 */
+.slide-fade-enter-active,
+.slide-fade-leave-active {
+    transition: all 0.4s ease-in-out;
+}
+
 
 /* 让"校园十大"区域固定 */
 .top {
@@ -479,7 +560,7 @@ const queryList = () =>{
 
 .main {
     padding: 20rpx;
-	border-radius: 15rpx;
+	border-radius: 20rpx;
 	margin: 18rpx;
 	background-color: #fff;
 	box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
@@ -503,6 +584,7 @@ const queryList = () =>{
 	flex-direction: column;
 	.userName{
 		font-size: 27rpx;
+		color: #000;
 		padding-bottom: 8rpx;
 	}
 	.title{
@@ -529,6 +611,7 @@ const queryList = () =>{
 		height: 200rpx;
 		margin-right: 1%;
 		margin-bottom: 1%;
+		border-radius: 10rpx;
 	}
 }
 .bottom{

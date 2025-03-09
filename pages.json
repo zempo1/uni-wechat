@@ -5,7 +5,8 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "社区"
+				"navigationBarTitleText": "社区",
+				"navigationBarBackgroundColor": "#68e7a4"
 			}
 		},
 		{
@@ -36,6 +37,7 @@
 			"style" : 
 			{
 				"navigationBarTitleText" : "闲置集市",
+				"navigationBarBackgroundColor": "#68e7a4",
 				"enablePullDownRefresh": true
 
 			}
@@ -86,6 +88,34 @@
 		},
 		{
 			"path" : "pages/text/text",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/my/myPost/myPost",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/my/myFavorite/myFavorite",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/market/marketContent/marketContent",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
+		},
+		{
+			"path" : "pages/my/myMarket/myMarket",
 			"style" : 
 			{
 				"navigationBarTitleText" : ""

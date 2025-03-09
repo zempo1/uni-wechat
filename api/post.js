@@ -4,7 +4,10 @@ import { request } from "../utils/request"
 export const apigetPostList = (data={}) =>{
 	return request({
 		url: '/api/v1/community/post',
-		data
+		data,
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken')
+		}
 	})
 }
 //发布帖子
@@ -52,10 +55,31 @@ export const apiPostComment = (data={}) =>{
 		}
 	})
 }
+//回复评论
+export const apiCommentReply = (data={}) =>{
+	return request({
+		url: '/api/v1/community/comment/reply',
+		method: 'post',
+		data,
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken')
+		}
+	})
+}
 //查询帖子评论列表
 export const apiPostCommentList = (data={}) =>{
 	return request({
 		url: '/api/v1/community/post/comment',
+		data,
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken')
+		}
+	})
+}
+//查询帖子子评论列表
+export const apiPostCommentChildList = (data={}) =>{
+	return request({
+		url: '/api/v1/community/comment/sub',
 		data,
 		header: {
 		    'Authorization': uni.getStorageSync('accessToken')
@@ -70,6 +94,30 @@ export const apiCommentLike = (data={}) =>{
 		data,
 		header: {
 		    'Authorization': uni.getStorageSync('accessToken')
+		}
+	})
+}
+//删除帖子
+export const apiPostDelete = (data={}) =>{
+	return request({
+		url: '/api/v1/community/post',
+		method: 'delete',
+		data:JSON.stringify(data),
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken'),
+			'Content-Type': 'application/json'
+		}
+	})
+}
+//删除评论
+export const apiCommentDelete = (data={}) =>{
+	return request({
+		url: '/api/v1/community/comment',
+		method: 'delete',
+		data:JSON.stringify(data),
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken'),
+			'Content-Type': 'application/json'
 		}
 	})
 }

@@ -1,6 +1,6 @@
 <script setup>
 import { nextTick, onMounted,getCurrentInstance } from 'vue';
-import {apiPostDetail,apiPostCommentList,apiPostCollect,apiPostLike,apiPostComment,apiCommentLike} from '../../api/post.js'
+import {apiPostDetail,apiPostCommentList,apiPostCollect,apiPostLike,apiPostComment,apiCommentLike,apiPostCommentChildList,apiCommentReply,apiCommentDelete} from '../../api/post.js'
 import {baseUrl} from '../../utils/request.js'
 import {deleteFile} from '@/api/file.js'
     const postId = ref()
@@ -8,7 +8,6 @@ import {deleteFile} from '@/api/file.js'
 	const userName = ref()
 	
 	onLoad(async (option)=>{
-		console.log(option);
 		postId.value = option.postId
 		userAvatar.value = option.userAvatar
 		userName.value = option.userName
@@ -32,6 +31,9 @@ import {deleteFile} from '@/api/file.js'
 		eventChannel.emit('acceptIsLike',{
 			data: post.value.isLike
 		});
+		eventChannel.emit('acceptCommentCount',{
+			data: post.value.commentCount
+		});
 	})
 	//查询帖子数据
 	const getPostList = async()=>{
@@ -47,6 +49,7 @@ import {deleteFile} from '@/api/file.js'
 	const isRefreshing = ref(false) //是否正在刷新帖子
 	const commentId = ref('')
 	const limit = ref(5)
+	const comments = ref([])
 	const getPostCommentList = async()=>{
 		const res = await apiPostCommentList({
 			userId: uni.getStorageSync('userId'),
@@ -56,7 +59,9 @@ import {deleteFile} from '@/api/file.js'
 			sortType: sortTypeIndex.value
 		})
 		console.log(res);
-		comments.value = res.data
+		if(limit.value>res.data.length) noData.value = true
+		comments.value = [...comments.value,...res.data];
+		console.log(comments.value);
 	}
 	//截取评论时间
 	const formatTime = (time) =>{
@@ -83,41 +88,7 @@ import {deleteFile} from '@/api/file.js'
 	    }
 	}
 	//帖子数据
-	const post = ref(
-		{
-			discussPostId:'0',
-			avatar:'../../static/avatar0.png',
-			username:'张三',
-			title:'帖子标题',
-			content:'帖子内容啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊',
-			likeCount:0,
-			images:[
-				'../../static/微信图片_20231020224507.jpg',
-				'../../static/logo.png',
-				'../../static/tabBar/publish.png',
-				'../../static/微信图片_20231020224507.jpg',
-				'../../static/微信图片_20231020224507.jpg',
-				'../../static/微信图片_20231020224507.jpg',
-				'../../static/微信图片_20231020224507.jpg',
-				'../../static/微信图片_20231020224507.jpg',
-			],
-			commentCount:0,
-			comments: [
-			   { id: 1, comments:[
-				   { id: 1, comments:[], avatar:'../../static/avatar0.png', username: '百香果', "createTime": "2025-01-27", text: '厉害厉害',likeCount:0 },
-				   { id: 2, comments:[], avatar:'../../static/avatar0.png', username: '雇员', "createTime": "2025-01-27", text: '哈哈',likeCount:0 },
-				   { id: 3, comments:[], avatar:'../../static/avatar0.png', username: '雇员2', "createTime": "2025-01-27", text: '啊啊',likeCount:0 },
-				   { id: 4, comments:[], avatar:'../../static/avatar0.png', username: '雇员3', "createTime": "2025-01-27", text: '好的',likeCount:0 },
-				   { id: 5, comments:[], avatar:'../../static/avatar0.png', username: '雇员4', "createTime": "2025-01-27", text: '嗯嗯',likeCount:0 },
-			      ],
-				avatar:'../../static/avatar0.png',username: '猎猎', text: ' 改变就在今天', "createTime": "2025-01-27",likeCount:0},
-			   { id: 2, comments:[], avatar:'../../static/avatar0.png', username: '百香果在鬼屋大叫', "createTime": "2025-01-27", text: '厉害厉害',likeCount:0 },
-			   { id: 3, comments:[],avatar:'../../static/avatar0.png', username: '涂涂', text: '我也', "createTime": "2025-01-27",likeCount:0 },
-		       { id: 4 ,comments:[],avatar:'../../static/avatar0.png', username: '啊', text:'超出', "createTime": "2025-01-27",likeCount:0}
-			 ],
-		},
-	)
-	const comments = ref([])
+	const post = ref([])
 	const previewImage = (index) => {
 		uni.previewImage({
 			urls: post.value.images,
@@ -214,10 +185,15 @@ function setSortType(type,index) {
 	lastClickTime = currentTime;
   sortType.value = type
   sortTypeIndex.value=index
+  comments.value=[]
+  commentId.value=''
+  noData.value = false
   getPostCommentList();
 }
 //点赞评论
-const clickCommentHeart = async (item) =>{
+const clickCommentHeart = async (item,type) =>{
+	console.log(item);
+	console.log(type);//1为点赞评论，0为点赞子评论
 	const currentTime = new Date().getTime();
 	if (currentTime - lastClickTime < THROTTLE_TIME) {
 	    return;
@@ -225,12 +201,25 @@ const clickCommentHeart = async (item) =>{
 	lastClickTime = currentTime;
 	const likeTime = formatTimestamp(currentTime);
 	console.log(likeTime);
-	const res = await apiCommentLike({
-		userId:uni.getStorageSync('userId'),
-		commentId:item.commentId,
-		likeTime:likeTime
-	})
-	console.log(res);
+	if(type==='1'){
+		const res = await apiCommentLike({
+			userId:uni.getStorageSync('userId'),
+			commentId:item.commentId,
+			likeTime:likeTime,
+			postId:postId.value
+		})
+		console.log(res);
+	}else{
+		console.log(commentCopy.value.commentId);
+		const res = await apiCommentLike({
+			userId:uni.getStorageSync('userId'),
+			commentId:item.commentId,
+			likeTime:likeTime,
+			postId:postId.value,
+			rootId: commentCopy.value.commentId
+		})
+		console.log(res);
+	}
 	// 根据当前状态切换点赞和取消点赞
 	if (item.isLike === false) {
 	    item.isLike = true;
@@ -240,8 +229,44 @@ const clickCommentHeart = async (item) =>{
 	    item.likeCount--;
 	}
 }
-    const scrolltolower = () =>{
-		console.log('触底了')
+//点赞楼主的评论
+	const clickBuilderHeart = async () =>{
+		console.log(commentCopy.value);
+		const currentTime = new Date().getTime();
+		if (currentTime - lastClickTime < THROTTLE_TIME) {
+		    return;
+		}
+		lastClickTime = currentTime;
+		const likeTime = formatTimestamp(currentTime);
+		console.log(likeTime);
+		const res = await apiCommentLike({
+			userId:uni.getStorageSync('userId'),
+			commentId:commentCopy.value.commentId,
+			likeTime:likeTime,
+			postId:postId.value
+		})
+		console.log(res);
+		// 根据当前状态切换点赞和取消点赞
+		if (commentCopy.value.isLike === false) {
+		    commentCopy.value.isLike = true;
+		    commentCopy.value.likeCount++;
+		} else {
+		    commentCopy.value.isLike = false;
+		    commentCopy.value.likeCount--;
+		}
+	}
+	//评论详情触底加载更多
+    const scrolltolower = async () =>{
+		console.log(noData.value);
+		if(noData.value || isRefreshing.value){
+			return
+		}
+		console.log('触底加载帖子');
+		commentId.value=comments.value[comments.value.length-1].commentId
+		console.log(commentId.value);
+		isRefreshing.value = true
+		getPostCommentList();
+		isRefreshing.value = false
 	}
 	//点击下面评论弹出评论框并自动获取焦点
 	const popup = ref()
@@ -291,16 +316,26 @@ const clickCommentHeart = async (item) =>{
 	const content = ref('')
 	//点击发送
 	const send = async () =>{
+		const currentTime = new Date().getTime();
+		const commentTime = formatTimestamp(currentTime);
+		console.log(commentTime);
 		const res = await apiPostComment({
 			userId:uni.getStorageSync('userId'),
 			postId:postId.value,
 			content:content.value,
-			imageUrl:imageUrl.value
+			imageUrl:imageUrl.value,
+			commentTime:commentTime
 		})
 		console.log(res);
 		content.value = ''
 		imageUrl.value = []
 		popup.value.close()
+		comments.value=[]
+		commentId.value = ''
+		uni.showToast({
+			title: '发布成功',
+			icon: 'none'
+		})
 		getPostCommentList()
 	}
 	//评论的图片样式
@@ -309,6 +344,217 @@ const clickCommentHeart = async (item) =>{
 	  height: 36,
 	  
 	});
+	//点击评论查看全部评论
+	const popupOpenComment = ref()
+	const commentCopy = ref({})//点击评论查看评论详情楼主的评论
+	const commentTime = ref()
+	const childComments = ref([])
+	const childCommentLimit = ref(5)
+	const childCommentId = ref('')
+	const getPostCommentChildList = async (item) =>{
+		const res = await apiPostCommentChildList({
+			userId: uni.getStorageSync('userId'),
+			rootId:item.commentId,
+			commentId: childCommentId.value,
+			limit: childCommentLimit.value,
+			sortType: 1
+		})
+		console.log(res);
+		if(limit.value>res.data.length) noDataChild.value = true
+		childComments.value = [...childComments.value,...res.data];
+	}
+	const replayTo = ref() //回复哪条评论
+	const openComment = async (item) =>{
+		//如果触发长按则不触发点击
+		if(isLongTap.value) {
+			isLongTap.value = false
+			return
+		}
+		console.log(item);
+		placeholder.value='发布一条友善的评论'
+		replayTo.value = item.commentId //默认为回复楼主的评论
+		childComments.value = []
+		commentCopy.value = item
+		commentTime.value = formatTime(item.commentTime)
+		getPostCommentChildList(item)
+		popupOpenComment.value.open()
+	}
+	//关闭评论查看所有评论
+	const closeComment = () =>{
+		popupOpenComment.value.close()
+		replyContent.value=''
+		childCommentId.value = ''
+		noDataChild.value=false
+	}
+	//点击遮罩层关闭查看所有评论
+	const maskClickChild = () =>{
+		childCommentId.value=''
+		noDataChild.value=false
+	}
+	//子评论详情触底加载更多
+	const isRefreshingChild = ref(false)
+	const noDataChild = ref(false)
+	const popScrolltolower = async () =>{
+		if(noDataChild.value || isRefreshingChild.value){
+			return
+		}
+		console.log('触底加载子评论');
+		childCommentId.value = childComments.value[childComments.value.length-1].commentId
+		console.log(childCommentId.value);
+		isRefreshingChild.value = true
+		getPostCommentChildList(commentCopy.value);
+		isRefreshingChild.value = false
+	}
+
+	//回复评论
+	const placeholder = ref('发布一条友善的评论')
+	const clickReply = (item) =>{
+		//如果触发长按则不触发点击
+		if(isLongTap.value) {
+			isLongTap.value = false
+			return
+		}
+		console.log(item);
+		replayTo.value = item.commentId //点击子评论回复子评论
+		placeholder.value = `回复${item.userName}`
+		nextTick(() =>{
+			isFocus.value = true
+		})
+		
+	}
+	//子评论输入框失去焦点
+	const blur = () =>{
+		placeholder.value='发布一条友善的评论'
+		replayTo.value = commentCopy.value.commentId //变为回复楼主的评论
+		isFocus.value = false
+	}
+	const replyContent = ref()//评论内容
+	//查看子评论点击发送评论
+	const sendReply = async () =>{
+		console.log(commentCopy.value.commentId);
+		console.log(replayTo.value);
+		const currentTime = new Date().getTime();
+		const commentTime = formatTimestamp(currentTime);
+		const res = await apiCommentReply({
+			userId:uni.getStorageSync('userId'),
+			postId:postId.value,
+			replyTo:replayTo.value,
+			rootId: commentCopy.value.commentId,
+			content:replyContent.value,
+			commentTime:commentTime
+		})
+		console.log(res);
+		//同步更新数据
+		const commentIndex = comments.value.findIndex(item => item.commentId === commentCopy.value.commentId);
+		if (commentIndex !== -1) {
+		    // 直接将新回复添加到该评论的 `replyList` 中
+			comments.value[commentIndex].userName = uni.getStorageSync('userName')
+		    comments.value[commentIndex].replyCount += 1; // 更新回复数量
+			// if(comments.value[commentIndex].replyCount<4)
+			comments.value[commentIndex].replyList.push({userName:uni.getStorageSync('userName'),content:replyContent.value,commentId:res.data.commentId});
+			console.log('comments',comments.value);
+		}
+		closeComment()
+		uni.showToast({
+			title: '发布成功',
+			icon: 'none'
+		})
+	}
+	
+	const popupDel = ref()
+	const isLongTap = ref()//是否触发长按
+	const isShowDel = ref(false)//是否显示删除按钮
+	//点击长按触发弹窗的遮罩层
+	const maskClickLongtap = () =>{
+		isShowDel.value = false
+	}
+	const copyContent = ref()
+	const delCommentId = ref()
+	const type = ref('')
+	const longtap = (item,t) =>{
+		console.log(item)
+		type.value = t
+		console.log(type.value);//'1'为评论长按，'0'为子评论长按
+		copyContent.value = item.content
+		delCommentId.value = item.commentId
+		if(item.userId === uni.getStorageSync('userId')) isShowDel.value=true;
+		isLongTap.value = true
+		popupDel.value.open()
+	}
+	//删除评论
+	const del = async () =>{
+		//是否删除
+		uni.showModal({
+				title: '提示',
+				content: '确定删除该评论吗？',
+				success: async function (re) {
+					if (re.confirm) {
+						if(type.value==='1'){
+							const res = await apiCommentDelete({
+								userId:uni.getStorageSync('userId'),
+								commentId:delCommentId.value,
+								postId:postId.value
+							})
+							console.log(res);
+							//同步更新数据
+							const commentIndex = comments.value.findIndex(item => item.commentId === delCommentId.value);
+							//将删除的评论同步去除
+							if(commentIndex !== -1){
+								comments.value.splice(commentIndex, 1);
+							}
+						}else{
+							const res = await apiCommentDelete({
+								userId:uni.getStorageSync('userId'),
+								commentId:delCommentId.value,
+								postId:postId.value,
+								rootId:commentCopy.value.commentId
+							})
+							console.log(res);
+							//同步更新数据
+							const commentIndex = childComments.value.findIndex(item => item.commentId === delCommentId.value);
+							console.log('commentIndex',commentIndex);
+							if(commentIndex !== -1){
+								childComments.value.splice(commentIndex, 1);
+								//comments的replayList也同步删除
+								const commentIndex1 = comments.value.findIndex(item => item.commentId === commentCopy.value.commentId);
+									if (commentIndex1 !== -1) {
+										comments.value[commentIndex1].replyCount -= 1; // 更新回复数量
+										if(comments.value[commentIndex1].replyCount<4){
+											console.log('commentIndex1',commentIndex1,'delCommentId',delCommentId.value);
+											const delIndex = comments.value[commentIndex1].replyList.findIndex(item => item.commentId === delCommentId.value);
+											console.log('delIndex',delIndex);
+												if (delIndex !== -1) {
+													comments.value[commentIndex1].replyList.splice(delIndex, 1);
+												}
+										}
+									}
+							}
+						}
+						
+						uni.showToast({
+							title: '删除成功',
+							icon: 'none'
+						})
+						popupDel.value.close()
+						
+					}
+				}
+			});
+	}
+	const copy = () =>{
+		uni.setClipboardData({
+			data:copyContent.value,//要被复制的内容
+			success:()=>{//复制成功的回调函数
+				uni.showToast({//提示
+				    title:'复制成功',
+				    icon: 'none'
+				})
+			}
+		});
+	}
+	const popLongtapClose = () =>{
+		popupDel.value.close()
+	}
 </script>
 
 <template>
@@ -375,8 +621,9 @@ const clickCommentHeart = async (item) =>{
 				        </view>
 				</view>
 			</view>
-			<view class="comment" v-for="(item,index) in comments" :key="index">
-				<view class="header">
+		    <!-- 帖子评论区域 -->
+			<view class="comment" v-for="(item,index) in comments" :key="index" @tap="openComment(item)" >
+				<view class="header"  @longtap="longtap(item,'1')">
 					<view class="userinfo">
 						<image class="avatar" :src="item.userAvatar || '../../static/avatar0.png'" mode="aspectFill"></image>
 						<view class="username-time">
@@ -385,49 +632,37 @@ const clickCommentHeart = async (item) =>{
 						</view>
 					</view>
 					<view class="heart">
-						<uni-icons v-if="!item.isLike" type="heart" size="48rpx" @tap="clickCommentHeart(item)">
+						<uni-icons v-if="!item.isLike" type="heart" size="48rpx" @tap.stop="clickCommentHeart(item,'1')">
 							<text style="font-size: 25rpx;">{{item.likeCount}}</text>
 						</uni-icons>
-						<uni-icons v-else type="heart-filled" color="#ff5050" size="48rpx" @tap="clickCommentHeart(item)">
+						<uni-icons v-else type="heart-filled" color="#ff5050" size="48rpx" @tap.stop="clickCommentHeart(item,'1')">
 							<text style="font-size: 25rpx;">{{item.likeCount}}</text>
 						</uni-icons>
 					</view>
 				</view>
 				<view class="comment-text">
 					<!-- 该帖子的评论 -->
-					<view style="margin-bottom: 15rpx;font-size: 34rpx;">
-						<text>{{item.content}}</text>
+					<view style="margin-bottom: 15rpx;font-size: 34rpx;"  @longtap="longtap(item,'1')">
+						<text style="font-size: 34rpx;">{{item.content}}</text>
 					</view>
 					<!-- 回复评论的评论 -->
-					<!-- <view class="reply" v-if="item.comments.length>0">
-						<view v-for="item2 in item.comments" >
-							<view class="header">
-									<view class="userinfo">
-										<image class="avatar" :src="item2.avatar || '../../static/avatar0.png'" mode="aspectFill"></image>
-										<view class="username-time">
-											<text class="username">{{item2.username}}</text>
-											<text class="time">{{item2.createTime}}</text>
-										</view>
-									</view>
-									<view class="heart">
-										<uni-icons :type="isHeart" size="25" @tap="clickHeart()">
-											<text style="font-size: 25rpx;">{{item2.likeCount}}</text>
-										</uni-icons>
-									</view>
-							</view>
-							<view class="comment-text" >
-							  {{item2.text}}
-							</view>
-						</view> -->
+					<view class="reply" v-if="item.replyList.length>0">
+						<view v-for="item2 in item.replyList.slice(0,3)" >
+							<text class="reply-user">{{item2.userName}}：</text>
+							<text class="reply-text">{{item2.content}}</text>
+						</view>
 						<!-- 超过 3 条时显示 "共 n 条评论" -->
-						<!-- <view v-if="item.comments.length > 3" class="more-comments">
-						    展开 {{ item.comments.length }} 条回复>
-						</view> -->
-					<!-- </view> -->
+						<view v-if="item.replyCount > 3" class="more-comments">
+						    查看全部 {{ item.replyCount }} 条回复>
+						</view>
+					</view>
 				</view>
 			</view>
 		</view>
-		<view class="foot"></view>
+		<!-- <view class="foot"></view> -->
+		<view v-if="noData || childComments.length>0" style="height:200rpx;padding: 20rpx;">
+			<uni-load-more :status="noData?'noMore':'loading'"></uni-load-more>
+		</view>
 		</scroll-view>
 	</view>
 	<!-- 底部发布评论 -->
@@ -454,6 +689,87 @@ const clickCommentHeart = async (item) =>{
 					<button class="btn" @tap="send()">发送</button>
 				</view>
 			</view>
+		</view>
+	</uni-popup>
+	<uni-popup ref="popupOpenComment" background-color="#fff" type="bottom" border-radius="15rpx 15rpx 0 0" @maskClick="maskClickChild">
+		<scroll-view scroll-y style="height: 1080rpx;" @scrolltolower="popScrolltolower">
+		    <view class="popComment-contain">
+				<view class="top">
+					<view><uni-icons @tap="closeComment()" type="closeempty" size="50rpx"></uni-icons></view>
+					<text class="top-title">评论详情</text>
+				</view>
+				<view class="commentTop">
+					<view class="header">
+						<view class="userinfo">
+							<image class="avatar" :src="commentCopy.userAvatar || '../../static/avatar0.png'" mode="aspectFill"></image>
+							<view class="username-time">
+								<text class="username">{{commentCopy.userName}}</text>
+								<text class="time">{{commentTime}}</text>
+							</view>
+						</view>
+						<view class="heart">
+							<uni-icons v-if="!commentCopy.isLike" type="heart" size="48rpx" @tap="clickBuilderHeart()">
+								<text style="font-size: 25rpx;">{{commentCopy.likeCount}}</text>
+							</uni-icons>
+							<uni-icons v-else type="heart-filled" color="#ff5050" size="48rpx" @tap="clickBuilderHeart()">
+								<text style="font-size: 25rpx;">{{commentCopy.likeCount}}</text>
+							</uni-icons>
+						</view>
+					</view>
+					<view class="comment-text">
+						<text style="margin-bottom: 15rpx;font-size: 34rpx;">{{commentCopy.content}}</text>
+					</view>
+				</view>
+				<!-- 子评论列表 -->
+				<view class="comment" v-for="(item,index) in childComments" :key="index" @tap="clickReply(item)" @longtap="longtap(item,'0')">
+					<view class="header" style="padding: 20rpx;">
+						<view class="userinfo">
+							<image class="avatar" :src="item.userAvatar || '../../static/avatar0.png'" mode="aspectFill"></image>
+							<view class="username-time">
+								<text class="username">{{item.userName}}</text>
+								<text class="time">{{formatTime(item.commentTime)}}</text>
+							</view>
+						</view>
+						<view class="heart">
+							<uni-icons v-if="!item.isLike" type="heart" size="48rpx" @tap.stop="clickCommentHeart(item,'0')">
+								<text style="font-size: 25rpx;">{{item.likeCount}}</text>
+							</uni-icons>
+							<uni-icons v-else type="heart-filled" color="#ff5050" size="48rpx" @tap.stop="clickCommentHeart(item,'0')">
+								<text style="font-size: 25rpx;">{{item.likeCount}}</text>
+							</uni-icons>
+						</view>
+					</view>
+					<view class="pop-comment-text">
+						<text v-if="item.replyTo===commentCopy.commentId" style="margin-bottom: 15rpx;font-size: 34rpx;">{{item.content}}</text>
+						<text v-else style="margin-bottom: 15rpx;font-size: 34rpx;">回复 <text style="color: #50a86f;">@{{item.replyToName}}</text>：{{item.content}}</text>
+					</view>
+				</view>
+				<view v-if="noDataChild || comments.length>0" style="height:200rpx;padding: 20rpx;">
+					<uni-load-more :status="noDataChild?'noMore':'loading'"></uni-load-more>
+				</view>
+				<!-- 底部发布评论 -->
+				<view class="bottom">
+					<view class="pop-comment-inputBox">
+						<view class="comment-input">
+							<textarea class="comment-textarea" v-model="replyContent" @blur="blur" :focus="isFocus" auto-height maxlength="500" :show-confirm-bar="false" :cursor-spacing="105" :placeholder="placeholder"></textarea>
+						</view>
+						<text class="comment-btn" @tap="sendReply()">发送</text>
+					</view>
+				</view>
+			</view>
+		</scroll-view>
+	</uni-popup>
+	<uni-popup ref="popupDel" type="bottom" border-radius="8rpx 8rpx 0 0"  @maskClick="maskClickLongtap" >
+		<view class="pop-contain">
+			<view class="del" style="border-bottom: 2rpx solid #e6e6e6;" @tap="copy()">
+				<uni-icons type="wallet" size="22" color="#666"></uni-icons>
+				<text>复制</text>
+			</view>
+			<view v-if="isShowDel" class="del" @tap="del()">
+				<uni-icons type="trash" size="22" color="red"></uni-icons>
+				<text>删除</text>
+			</view>
+			<view class="cancel" @tap="popLongtapClose()"><text>取消</text></view>
 		</view>
 	</uni-popup>
 </template>
@@ -671,7 +987,12 @@ const clickCommentHeart = async (item) =>{
 .reply{
 	background: #f3f3f3;
 	padding: 15rpx 10rpx;
-	font-size: 27rpx;
+	font-size: 28rpx;
+	border-radius: 5rpx;
+	.reply-user{
+		color: #666;
+		font-weight: 600;
+	}
 }
 .more-comments{
 	color: #50a86f;
@@ -679,5 +1000,93 @@ const clickCommentHeart = async (item) =>{
 	font-weight: 600;
 	padding-top: 10rpx;
 }
-
+.popComment-contain{
+	height: 1090rpx;
+	.top{
+		display: flex;
+		align-items: center;
+		border-bottom: 1px solid #e6e6e6;
+		padding: 20rpx;
+		position: fixed;
+		top: 0;
+		width: 100%;
+		background-color: #fff;
+		.top-title{
+			font-size: 30rpx;
+			margin-left: 234rpx;
+		}
+	}
+	.commentTop{
+		margin-top: 70rpx;
+		padding: 20rpx 0rpx;
+		border-bottom: 30rpx solid #e6e6e6;
+		.header{
+			display: flex;
+			justify-content: space-between;
+		}
+		.comment-text{
+			margin-left: 110rpx;
+		}
+	}
+	.pop-comment-text{
+		padding: 10rpx;
+		margin-left: 100rpx;
+	}
+	.bottom {
+		position: fixed;
+		width: 100%;
+		bottom: 0;
+		background-color: #fff;
+		.pop-comment-inputBox{
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 20rpx 20rpx;
+			.comment-input{
+				border: 1rpx solid #ccc;
+				background-color: #eeeeef;
+				border-radius:40rpx;
+				padding: 15rpx 20rpx;
+				font-size: 26rpx;
+				.comment-textarea{
+					width: 540rpx;
+				}
+			}
+			.comment-btn{
+				width: 110rpx;
+				height: 60rpx;
+				line-height: 60rpx;
+				border-radius: 10rpx;
+			    padding: 5rpx;
+				text-align: center;
+				background-color: #55b376;
+				color: #fff;
+				font-size: 28rpx;
+			}
+		}
+	}
+}
+.pop-contain{
+	background-color: #fff;
+	.del{
+		padding: 30rpx 20rpx;
+		border-bottom: 10rpx solid #e6e6e6;
+		display: flex;
+		align-items: center;
+		text{
+			font-size: 32rpx;
+			margin-left: 20rpx;
+			vertical-align: middle;
+		}
+	}
+	.cancel{
+		padding: 30rpx 20rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		text{
+			font-size: 34rpx;
+		}
+	}
+}
 </style>

@@ -45,20 +45,20 @@ const rules = ref({
 		    }
         ]
     },
-	// phone: {
-	//     rules: [
-	//         {
-	//             required: true,
-	//             errorMessage: ' 请输入手机号码',
-	// 			trigger: 'blur'
-	//         },
-	//         {
-	//             pattern :/^[1]([3-9])[0-9]{9}$/,
-	//             errorMessage: '请检查是否为中国大陆手机号',
-	// 			trigger: 'blur'
-	//         }
-	//     ]
-	// },
+	phone: {
+	    rules: [
+	        {
+	            required: true,
+	            errorMessage: ' 请输入手机号码',
+				trigger: 'blur'
+	        },
+	        {
+	            pattern :/^[1]([3-9])[0-9]{9}$/,
+	            errorMessage: '请检查是否为中国大陆手机号',
+				trigger: 'blur'
+	        }
+	    ]
+	},
 	price: {
 	    rules: [
 	        {
@@ -138,6 +138,8 @@ const publish = () =>{
 			type: value.value,
 			price: formData.value.price,
 			images: arrPicture.value,
+			contact: formData.value.phone,
+			schoolCode:'11819',
 			title:'1',
 			tags:[]
 		})

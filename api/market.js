@@ -12,7 +12,10 @@ export const addMarketPost = (data={}) =>{
 	return request({
 		url: '/api/v1/bazaar/post',
 		method: 'post',
-		data
+		data,
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken')
+		}
 	})
 }
 //查询帖子详情
@@ -44,6 +47,16 @@ export const finishMarketPost = (data={}) =>{
 		data,
 		header: {
 		    'Authorization': uni.getStorageSync('accessToken'),
+		}
+	})
+}
+//集市搜索
+export const searchMarketPost = (data={}) =>{
+	return request({
+		url: '/api/v1/search/bazaar',
+		data,
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken')
 		}
 	})
 }

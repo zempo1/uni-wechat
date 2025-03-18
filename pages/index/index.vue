@@ -2,6 +2,7 @@
 import { ref, onMounted, nextTick } from 'vue';
 import {apigetPostList,apiPostLike,apiPostCollect} from '../../api/post.js'
 import { login } from '../../api/user.js';
+import { formatTimestamp,formatDate } from '@/common/formatTime.js';
 onLoad(()=>{
 	userId.value = uni.getStorageSync('userId')
 	getPostList()
@@ -26,8 +27,26 @@ const fixedTop = ref(false); // 判断是否固定
 const showTopButton = ref(false); // 控制按钮显示状态
 // 设置激活的筛选条件
 const setActiveFilter = (item) => {
+	const currentTime = new Date().getTime();
+	if (currentTime - lastClickTime < THROTTLE_TIME) {
+	    return;
+	}
+	lastClickTime = currentTime;
     activeFilter.value = item;
     console.log(item);
+	if(item==='全部'){
+		type.value=''
+		noData.value=false
+		post.value=[]
+		postId.value=''
+		getPostList()
+	}else if(item==='精选'){
+		type.value = 1
+		noData.value=false
+		post.value=[]
+		postId.value=''
+		getPostList()
+	}
 };
 
 // 监听滚动事件
@@ -39,10 +58,30 @@ const onScroll = (e) => {
 };
 //公告
 const announcement = [
-	'1、deepseek满血版上线莞工？！',
-	'2、北街巴萨客着火！鼠鼠都被烧焦了',
-	'3、开学啦！',
-	'4、我头发怎么快掉光了'
+	{
+		title:'1、校工会举办"环校奔跑展风采 莞工巾帼竞芳华"女教职工春季环校跑活动',
+		url:'https://www.dgut.edu.cn/info/1102/75722.htm'
+	},
+	{
+		title:'2、"绿美东莞"植绿护绿，莞工青年在行动',
+		url:'https://www.dgut.edu.cn/info/1019/75792.htm'
+	},
+	{
+		title:'3、校地合作共推应急救护教育 打造平安健康校园文化',
+		url:'https://www.dgut.edu.cn/info/1019/75812.htm'
+	},
+	{
+		title:'4、学校召开入伍学生欢送会',
+		url:'https://www.dgut.edu.cn/info/1019/75772.htm'
+	},
+	{
+		title:'5、双百行动进行时丨校地合作助力新丰低空经济"高飞"',
+		url:'https://www.dgut.edu.cn/info/1019/75702.htm'
+	},
+	{
+		title:'6、马宏伟率队赴石碣镇调研',
+		url:'https://www.dgut.edu.cn/info/1019/75682.htm'
+	}
 ]
 //帖子数据
 const post = ref([
@@ -53,21 +92,6 @@ const isLike = ref(false)
 const starNumber = ref(0)
 const chatNumber = ref(0)
 const favoriteCount = ref(0)
-//获取当前时间
-function formatTimestamp(timestamp) {
-	console.log(timestamp);
-    const date = new Date(timestamp); // 将时间戳转换为 Date 对象
-    const year = date.getFullYear();  // 获取年份
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // 获取月份，注意要 +1，且格式化为2位数
-    const day = String(date.getDate()).padStart(2, '0'); // 获取日期，格式化为2位数
-    const hours = String(date.getHours()).padStart(2, '0'); // 获取小时，格式化为2位数
-    const minutes = String(date.getMinutes()).padStart(2, '0'); // 获取分钟，格式化为2位数
-    const seconds = String(date.getSeconds()).padStart(2, '0'); // 获取秒，格式化为2位数
-
-    // 拼接成目标格式
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
-
 
 // 点击收藏
 const isStaring = ref(false)
@@ -116,7 +140,7 @@ const clickHeart = async (item) => {
 
     try {
         const res = await apiPostLike({
-            userId: userId.value,
+            userId: uni.getStorageSync('userId'),
             postId: item.discussPostId,
             likeTime: likeTime
         });
@@ -144,14 +168,18 @@ const newComment = ref('');
 const userId = ref()
 const postId = ref('')
 const limit = ref(5)
+const type = ref('')
 const noData = ref(false)
 const isRefreshing = ref(false) //是否正在刷新帖子
 const getPostList = async()=>{
+	 const lastUpdateTime = formatTimestamp(new Date().getTime());
 	const res = await apigetPostList({
 		userId:uni.getStorageSync('userId'),
 		postId:postId.value,
 		limit:limit.value,
-		schoolCode:'11819'
+		schoolCode:uni.getStorageSync('schoolCode'),
+		type:type.value,
+		lastUpdateTime:lastUpdateTime
 	})
 	console.log(res)
 	post.value = [...post.value,...res.data];
@@ -245,13 +273,16 @@ const gotoPostContent = (postId,userAvatar,userName) =>{
 const paging = ref()
 const queryList = () =>{
 	// console.log(pageNo,pageSize);
+	const lastUpdateTime = formatTimestamp(new Date().getTime());
 	setTimeout(() =>{
 		noData.value = false
 			 apigetPostList({
 				userId:uni.getStorageSync('userId'),
 				postId:'',
 				limit:limit.value,
-				schoolCode:'11819'
+				schoolCode:uni.getStorageSync('schoolCode'),
+				type:type.value,
+				lastUpdateTime:lastUpdateTime
 			}).then(res=>{
 				console.log(res);
 				paging.value.complete(res.data);
@@ -278,6 +309,108 @@ const onTop = () =>{
 	    }, 600);
 	  }, 100);
 }
+
+//学分汇总
+const spikLink = (url) =>{
+	uni.navigateTo({
+		url: '/pages/webView/webView?url=' + url
+	})
+}
+const creditList = ref([
+	{
+		title:'0.5知行分＋0.3课外学分＋6h志愿时长！',
+		time:'2025年3月17日',
+		url:'https://mp.weixin.qq.com/s/5kE4aCpQbeNr-qVC7dWMgQ'
+	},
+	{
+		title:'报名时间长，最高+0.5学分',
+		time:'2025年3月16日',
+		url:'https://mp.weixin.qq.com/s/mOcXasnbwotr4AJsW-IU-g'
+	},
+	{
+		title:'来读书吗？第一期读书沙龙活动来啦！',
+		time:'2025年3月13日',
+		url:'https://mp.weixin.qq.com/s/Y_aYcQqUkyXARpPml0ygHg'
+	},
+	{
+		title:'中午12点半报名！观影拿课外学分',
+		time:'2025年3月11日',
+		url:'https://mp.weixin.qq.com/s/l1Ulq4DOi-f2Cag9RyIS6g'
+	},
+	{
+		title:'摘叶子拿0.5知行学分，今天中午开始报名',
+		time:'2025年3月10日',
+		url:'https://mp.weixin.qq.com/s/KBeyrYpH7mqxMvvrIAuR_w'
+	},
+	{
+		title:'0.3课外学分，今天可以报名！',
+		time:'2025年3月8日',
+		url:'https://mp.weixin.qq.com/s/jGND1rAeD0mCOY8wM3wYEA'
+	},
+	{
+		title:'不限人数！超容易做！超长投稿时间！',
+		time:'2025年3月6日',
+		url:'https://mp.weixin.qq.com/s/0R8_Y7JGyrGxZheoBWr0QQ'
+	},
+	{
+		title:'明天报名！有院级高雅美育，本周五知行选课',
+		time:'2025年3月4日',
+		url:'https://mp.weixin.qq.com/s/URS29Z9h2IHZNCIgRRyn3g'
+	},
+	{
+		title:'超简单的答题拿学分',
+		time:'2025年3月2日',
+		url:'https://mp.weixin.qq.com/s/fxWaOHboYJeVy3sKkmU7Rg'
+	},
+	{
+		title:'现在拿学分还送视频会员吗？！',
+		time:'2025年3月1日',
+		url:'https://mp.weixin.qq.com/s/UwkRyuqO54Ojw-UacN7xqw'
+	},
+	{
+		title:'同学，开学了不来点学分吗？',
+		time:'2025年2月27日',
+		url:'https://mp.weixin.qq.com/s/fJII2-k_NqyLr0qJAORScw'
+	},
+])
+const schoolList = ref([
+	{
+		title:'你的点歌台已上线，这次换你定义校园 BGM',
+		time:'2025年3月17日',
+		url:'https://mp.weixin.qq.com/s/MP1rj5vG5AiVR-6oWspdEA',
+		tag:'校园点歌'
+	},
+	{
+		title:'普宁爱心支教队14.0招募队员啦！！！',
+		time:'2025年3月17日',
+		url:'https://mp.weixin.qq.com/s/oJq35FxKeFhCPEIrgt2fBQ',
+		tag:'爱心支教'
+	},
+	{
+		title:'这些名字里，谁是人气王？',
+		time:'2025年3月10日',
+		url:'https://mp.weixin.qq.com/s/jei7V6TZVVJ0sVDLgKmtOA',
+		tag:'投票抽奖'
+	},
+	{
+		title:'这个课表让我感到陌生！',
+		time:'2025年3月7日',
+		url:'https://mp.weixin.qq.com/s/gxovX3izWI75WwQmEalpzA',
+		tag:'课表鉴赏'
+	},
+	{
+		title:'我将加入开学这个权威的圈子',
+		time:'2025年3月4日',
+		url:'https://mp.weixin.qq.com/s/FTivrt65vDEsV88pKV0Z9Q',
+		tag:'寒假暂停'
+	},
+	{
+		title:'这次真的“啡”去不可',
+		time:'2025年3月3日',
+		url:'https://mp.weixin.qq.com/s/Y1WWTm5XbqR9rRHU3UlYiQ',
+		tag:'咖啡文化'
+	},
+])
 </script>
 
 <template>
@@ -299,9 +432,9 @@ const onTop = () =>{
 	   	                    <text>校告</text>
 	   	                </view>
 	   	                <view class="right">
-	   	                    <swiper vertical autoplay interval="2700" duration="2000" circular>
-	   	                        <swiper-item v-for="item in announcement" >
-	   	                            <text class="announceText">{{item}}</text>
+	   	                    <swiper vertical autoplay interval="4000" duration="2500" circular>
+	   	                        <swiper-item v-for="(item,index) in announcement" :key="index" @tap="spikLink(item.url)" >
+	   	                            <text class="announceText">{{item.title}}</text>
 	   	                        </swiper-item>
 	   	                    </swiper>
 	   	                </view>
@@ -309,7 +442,7 @@ const onTop = () =>{
 	   	            <!-- 类别 -->
 	   	            <view class="category">
 	   	                <view
-	   	                    v-for="(item, index) in ['全部', '精选', '校园动态', '校园活动','学分汇总']"
+	   	                    v-for="(item, index) in ['全部', '精选', '校园动态','学分汇总']"
 	   	                    :key="index"
 	   	                    class="filter-item"
 	   	                    :class="{ active: activeFilter === item }"
@@ -323,70 +456,117 @@ const onTop = () =>{
 	   	                </view>
 	   	            </view>
 	   	        </view>
-	   	        <!-- 内容部分 -->		
-	   	        <view class="main" v-for="item in post" :key="item.discussPostId" @tap="gotoPostContent(item.discussPostId,item.userAvatar,item.userName)" >
-	   	  		    <view class="userinfo">
-	   	  		    	<image class="avatar" :src="item.userAvatar || '../../static/avatar0.png'" mode="aspectFill"></image>
-	   	  		    	<view class="userName-title">
-	   	  		    		<view class="userName"><text>{{item.userName}}</text></view>
-	   	  		    		<text class="title">{{item.title}}</text>
-	   	  		    	</view>
-	   	  		    </view>
-	   	  		    <view class="content" >
-	   	  		    	<text v-if="isTextExpanded(item.discussPostId) || item.content.length <= 100" >{{ item.content }}</text>
-	   	  		    	<text v-else>{{ truncatedText(item.content) }}...</text>
-	   	  		    	<view v-if="item.content.length>100" class="toggle-btn" @tap.stop="toggleText(item.discussPostId)">
-	   	  		    	    <text>{{ isTextExpanded(item.discussPostId) ? '收起' : '展开' }}</text>
-	   	  		        </view>
-	   	  		    </view>
-	   	  		    <!-- 显示图片 -->
-	   	  		    <view class="images" v-if="item.image" >
-	   	  		    	<image :src="item.image" mode="widthFix" class="image-item" @tap.stop="previewImage(item.image)"></image>
-	   	  		    </view>
-	   	  		    <!-- 底部信息 -->
-	   	            <view class="bottom">
-	   	                <view class="topicBox">
-							<text class="topic">#{{item.tag}}</text>
+	   	        <!-- 内容部分 -->
+				<view v-if="activeFilter==='全部'|| activeFilter==='精选'">
+					<view class="main" v-for="(item,index) in post" :key="item.discussPostId" @tap="gotoPostContent(item.discussPostId,item.userAvatar,item.userName)" >
+					    <view class="userinfo-time">
+					    	<view class="userinfo">
+					    		<image class="avatar" :src="item.userAvatar || '../../static/avatar0.png'" mode="aspectFill"></image>
+					    		<view class="userName-title">
+					    			<view class="userName"><text>{{item.userName}}</text></view>
+					    			<text class="title">{{item.title}}</text>
+					    		</view>
+					    	</view>
+					    	<view class="time">
+					    		<text>{{formatDate(item.createTime)}}</text>
+					    	</view>
+					    </view>
+						
+					    <view class="content" >
+					    	<text v-if="isTextExpanded(item.discussPostId) || item.content.length <= 100" >{{ item.content }}</text>
+					    	<text v-else>{{ truncatedText(item.content) }}...</text>
+					    	<view v-if="item.content.length>100" class="toggle-btn" @tap.stop="toggleText(item.discussPostId)">
+					    	    <text>{{ isTextExpanded(item.discussPostId) ? '收起' : '展开' }}</text>
+					        </view>
+					    </view>
+					    <!-- 显示图片 -->
+					    <view class="images" v-if="item.image" >
+					    	<image :src="item.image" mode="widthFix" class="image-item" @tap.stop="previewImage(item.image)"></image>
+					    </view>
+					    <!-- 底部信息 -->
+					    <view class="bottom">
+					        <view class="topicBox">
+								<text class="topic">#{{item.tag}}</text>
+							</view>
+					        <view class="actions">
+					    	    <view class="star">
+					    	    	<uni-icons v-if="!item.isFavorite" type="star" size="50rpx" @tap.stop="clickStar(item)">
+					    	    		<text style="font-size: 26rpx;">{{item.favoriteCount}}</text>
+					    	    	</uni-icons>
+									<uni-icons v-else type="star-filled" size="50rpx" color="#fdc550" @tap.stop="clickStar(item)">
+										<text style="font-size: 26rpx;">{{item.favoriteCount}}</text>
+									</uni-icons>
+					    	    </view>
+					            <view class="chat">
+					                <uni-icons type="chat" size="50rpx"  @tap="gotoPostContent(item.discussPostId,item.userAvatar,item.userName)">
+					    	    		<text style="font-size: 26rpx;">{{item.commentCount}}</text>
+					    	    	</uni-icons>
+					            </view>
+					    	    <view class="heart">
+					    	    	<uni-icons v-if="!item.isLike" type="heart" size="48rpx" @tap.stop="clickHeart(item)">
+					    	    		<text style="font-size: 25rpx;">{{item.likeCount}}</text>
+					    	    	</uni-icons>
+									<uni-icons v-else type="heart-filled" color="#ff5050" size="48rpx" @tap.stop="clickHeart(item)">
+										<text style="font-size: 25rpx;">{{item.likeCount}}</text>
+									</uni-icons>
+					    	    </view>
+					        </view>
+					    </view>
+					    <!-- 评论区域 -->
+					    <view class="comments" v-if="item.comments.length>0" @tap="gotoPostContent(item.discussPostId,item.userAvatar,item.userName)">
+					        <view v-for="(comment, index) in item.comments" :key="index">
+					            <text class="comment-user">{{ comment.userName }}：</text>
+					            <text class="comment-text">{{ comment.content }}</text>
+					        </view>
+					    
+					        <!-- 超过 3 条时显示 "共 n 条评论" -->
+					        <view v-if="item.commentCount > 3" class="more-comments">
+					            共 {{ item.commentCount }} 条回复>
+					        </view>
+					    </view>
+					</view>
+					<view v-if="noData || post.length>0">
+						<uni-load-more :status="noData?'noMore':'loading'"></uni-load-more>
+					</view>
+					<view v-if="noData" style="display: flex;justify-content: center;">
+						<image style="height: 100%;" mode="widthFix" src="../../static/noData.png"></image>
+					</view>
+				</view>
+				<view v-if="activeFilter==='学分汇总'" class="main" v-for="(item,index) in creditList" :key="index">
+					<view class="credit" @tap="spikLink(item.url)">
+						<view class="credit-left">
+							<view class="credit-title">
+								{{item.title}}
+							</view>
+							<view class="credit-time">
+								{{item.time}}
+							</view>
+							<view class="credit-tag">
+								学分汇总
+							</view>
 						</view>
-	   	                <view class="actions">
-	   	  		    	    <view class="star">
-	   	  		    	    	<uni-icons v-if="!item.isFavorite" type="star" size="50rpx" @tap.stop="clickStar(item)">
-	   	  		    	    		<text style="font-size: 26rpx;">{{item.favoriteCount}}</text>
-	   	  		    	    	</uni-icons>
-								<uni-icons v-else type="star-filled" size="50rpx" color="#fdc550" @tap.stop="clickStar(item)">
-									<text style="font-size: 26rpx;">{{item.favoriteCount}}</text>
-								</uni-icons>
-	   	  		    	    </view>
-	   	                    <view class="chat">
-	   	                        <uni-icons type="chat" size="50rpx"  @tap="gotoPostContent(item.discussPostId,item.userAvatar,item.userName)">
-	   	  		    	    		<text style="font-size: 26rpx;">{{item.commentCount}}</text>
-	   	  		    	    	</uni-icons>
-	   	                    </view>
-	   	  		    	    <view class="heart">
-	   	  		    	    	<uni-icons v-if="!item.isLike" type="heart" size="48rpx" @tap.stop="clickHeart(item)">
-	   	  		    	    		<text style="font-size: 25rpx;">{{item.likeCount}}</text>
-	   	  		    	    	</uni-icons>
-								<uni-icons v-else type="heart-filled" color="#ff5050" size="48rpx" @tap.stop="clickHeart(item)">
-									<text style="font-size: 25rpx;">{{item.likeCount}}</text>
-								</uni-icons>
-	   	  		    	    </view>
-	   	                </view>
-	   	            </view>
-	   	  		    <!-- 评论区域 -->
-	   	  		    <view class="comments" v-if="item.comments.length>0" @tap="gotoPostContent(item.discussPostId,item.userAvatar,item.userName)">
-	   	  		        <view v-for="(comment, index) in item.comments" :key="index">
-	   	  		            <text class="comment-user">{{ comment.userName }}：</text>
-	   	  		            <text class="comment-text">{{ comment.content }}</text>
-	   	  		        </view>
-				    
-	   	  		        <!-- 超过 3 条时显示 "共 n 条评论" -->
-	   	  		        <view v-if="item.commentCount > 3" class="more-comments">
-	   	  		            共 {{ item.commentCount }} 条回复>
-	   	  		        </view>
-	   	  		    </view>
-	   	        </view>
-				<view v-if="noData || post.length>0">
-					<uni-load-more :status="noData?'noMore':'loading'"></uni-load-more>
+						<view class="credit-right">
+							 <text>学分预告</text>
+						</view>
+					</view>
+				</view>
+				<view v-if="activeFilter==='校园动态'" class="main" v-for="(item,index) in schoolList" :key="index">
+					<view class="credit" @tap="spikLink(item.url)">
+						<view class="credit-left">
+							<view class="credit-title">
+								{{item.title}}
+							</view>
+							<view class="credit-time">
+								{{item.time}}
+							</view>
+							<view class="credit-tag">
+								校园动态
+							</view>
+						</view>
+						<view class="credit-right">
+							 <text>{{item.tag}}</text>
+						</view>
+					</view>
 				</view>
 				<view class="float" @tap="onTop()" :style="{ opacity: showTopButton ? 1 : 0 }">
 					<view class="item"><image class="huojian" src="../../static/火箭.png" :class="{ launching: isLaunching }"></image></view>
@@ -411,7 +591,7 @@ const onTop = () =>{
    .float{
 	   position: fixed;
 	   right: 30rpx;
-	   bottom: 25rpx;
+	   bottom: 50rpx;
 	    transition: opacity 0.4s ease-in-out;
 	   .item{
 		    width: 105rpx;
@@ -520,7 +700,7 @@ const onTop = () =>{
 }
 
 .filter-item {
-    padding: 15rpx 15rpx;
+    padding: 15rpx 20rpx;
     font-size: 28rpx;
     height: 28rpx;
     line-height: 28rpx;
@@ -565,6 +745,17 @@ const onTop = () =>{
 	background-color: #fff;
 	box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.1);
 }
+.userinfo-time{
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	.time{
+		font-size: 24rpx;
+		color: #999999;
+		flex-shrink: 0;  // 防止被挤压
+		padding: 10rpx;
+	}
+}
 .userinfo{
 	display: flex;
 	align-items: center;
@@ -590,6 +781,11 @@ const onTop = () =>{
 	.title{
 		font-size: 28rpx;
 		font-weight: 600;
+		-webkit-line-clamp: 1;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
 	}
 }
 .content{
@@ -679,5 +875,53 @@ const onTop = () =>{
 	font-size: 30rpx;
 	color: #52ad72;
 	background-color: #fff;
+}
+
+//学分汇总
+.credit{
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 10rpx 0;
+	.credit-left{
+		display: flex;
+		flex-direction: column;
+		.credit-title{
+			font-size: 30rpx;
+			// font-weight: 600;
+			color: #000;
+			margin-bottom: 15rpx;
+		}
+		.credit-time{
+			font-size: 26rpx;
+			color: #999999;
+			margin-bottom: 15rpx;
+		}
+		.credit-tag{
+			color: #fff;
+			background-color: #5cc280;
+			border-radius: 10rpx;
+			width: 130rpx;
+			text-align: center;
+			padding: 8rpx 0;
+			font-size: 24rpx;
+		}
+	}
+    .credit-right{
+		margin-left: 10rpx;
+		width: 200rpx;
+		min-height: 170rpx;
+		border-radius: 10rpx;
+		flex-shrink: 0; 
+		background-color: #627fa7;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		text{
+			color: #fff;
+			font-size: 40rpx;
+			font-weight: 600;
+		}
+	}
 }
 </style>

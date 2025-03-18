@@ -14,8 +14,11 @@ const user = ref({
 });
 const userId = ref()
 const genderArr = ['保密','男', '女'];
+const schoolArr = ['东莞理工学院(松山湖校区)','东莞理工学院(莞城校区)','广东医科大学(湛江校区)','广东医科大学(东莞校区)','东莞职业技术学院(松山湖校区)','东莞职业技术学院(大岭山校区)','东莞职业技术学院(道滘校区)']
+const schoolCodeArr = ['11819B','11819A','10571A','10571B','14263A','14263B','14263C']
+const schoolIndex = ref();
 const gender = ref();
-const index = ref();
+const genderIndex = ref();
 onLoad(async () => {
    // 获取用户信息
   userId.value = uni.getStorageSync('userId');
@@ -26,16 +29,32 @@ onLoad(async () => {
    user.value.avatar = userInfoResult.data.avatar;
    user.value.gender = userInfoResult.data.gender;
    user.value.phone = userInfoResult.data.phone
-   index.value = user.value.gender;
-   gender.value = genderArr[index.value];
+   //根据userInfoResult.data.schoolCode判断schoolCodeArr的索引
+   if(userInfoResult.data.school){
+	   for (let i = 0; i < schoolCodeArr.length; i++) {
+	     if (schoolCodeArr[i] === userInfoResult.data.school.schoolCode) {
+	       schoolIndex.value = i;
+		   user.value.schoolCode = schoolCodeArr[schoolIndex.value];
+	       break;
+	     }
+	   }
+   }
+   user.value.realName = userInfoResult.data.realName;
+   genderIndex.value = user.value.gender;
+   gender.value = genderArr[genderIndex.value];
 });
 
 
 const pickGender = (e) => {
-  index.value = e.detail.value;
-  user.value.gender = index.value;
-  gender.value = genderArr[index.value];
+  genderIndex.value = e.detail.value;
+  user.value.gender = genderIndex.value;
+  gender.value = genderArr[genderIndex.value];
 };
+
+const pickSchool = (e) => {
+  schoolIndex.value = e.detail.value;
+  user.value.schoolCode = schoolCodeArr[schoolIndex.value];
+}
 const onChooseAvatar = (e) => {
   console.log(e)
   //修改头像
@@ -68,6 +87,14 @@ const onChooseAvatar = (e) => {
   }
 }
 const submit = async () => {
+	if(user.value.schoolCode===''){
+		uni.showToast({
+			title: '请选择学校',
+			icon: 'none'
+		})
+		return
+	}
+	
    const res = await updateUserInfo({
 	    userId: userId.value,
 		userName: user.value.userName,
@@ -81,6 +108,7 @@ const submit = async () => {
    console.log(res);
    uni.setStorageSync('avatar', user.value.avatar);
    uni.setStorageSync('userName', user.value.userName);
+   uni.setStorageSync('schoolCode', user.value.schoolCode);
    uni.showToast({
     title: '保存成功',
     icon: 'success'
@@ -95,6 +123,7 @@ const cancelUser = () => {
 	uni.showModal({
 		title: '注销账号',
 		content: '注销账号将清空所有虚拟资产，是否继续？',
+		confirmColor: '#e43d33',
 		success: async (result) => {
 			console.log(result);
 			if (result.confirm) {
@@ -123,7 +152,6 @@ const cancelUser = () => {
   <view class="container">
     <view class="herder">
       <text style="font-size: 50rpx;">个人中心</text>
-	  <text class="right">实名认证></text>
     </view>
 
     <!-- 功能列表 -->
@@ -148,13 +176,14 @@ const cancelUser = () => {
 	  <view class="menu-item">
 	  	<h1>性别</h1>
 		<view class="pick">
-			<picker @change="pickGender" :value="index" :range="genderArr">
+			<picker @change="pickGender" :value="genderIndex" :range="genderArr">
 				<view class="arrow">
 					{{gender}} >
 				</view>
 			</picker>
 		</view>
 	  </view>
+	  
       <view class="menu-item" >
         <h1>手机号</h1>
 		<view style="display: flex;">
@@ -162,7 +191,26 @@ const cancelUser = () => {
 			<view class="arrow">></view>
 		</view>
       </view>
-	 
+	  <view class="menu-item" >
+	    <h1>真实姓名</h1>
+	  		<view style="display: flex;">
+	  			<input placeholder="请输入真实姓名" v-model="user.realName" class="phone" />
+	  			<view class="arrow">></view>
+	  		</view>
+	  </view>
+	 <view class="menu-item">
+	 	<h1 style="color: red;">认证学校 *</h1>
+	 		<view class="pick">
+	 			<picker @change="pickSchool" :value="schoolIndex" :range="schoolArr">
+					<view class="arrow" v-if="user.schoolCode!==null && schoolIndex==null">
+						<text style="color: red;">请选择学校 ></text>
+					</view>
+	 				<view class="arrow" v-else>
+	 					{{schoolArr[schoolIndex]}} >
+	 				</view>
+	 			</picker>
+	 		</view>
+	 </view>
       <view class="menu-item" >
        <view class="left">
            <h1>注销账号</h1>
@@ -196,11 +244,7 @@ const cancelUser = () => {
   background-color: #ffffff;
   color: #333333;
   font-weight: 700;
-  .right{
-	  padding-top: 20rpx;
-	  font-size: 30rpx;
-	  color: #ff9800;
-  }
+
 }
 
 /* 菜单列表 */

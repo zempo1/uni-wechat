@@ -1,8 +1,9 @@
 <script setup>
 import { ref } from 'vue';
-import {apigetPostList} from '@/api/post.js'
-
+import {apigetPostList,apiPostSearch} from '@/api/post.js'
+import {formatDate} from '@/common/formatTime.js'
 const userId = ref('')
+const schoolCode = ref(uni.getStorageSync('schoolCode'))
 onLoad(()=>{
 	userId.value = uni.getStorageSync('userId')
 	getPostList()
@@ -14,11 +15,59 @@ const gotoPostContent = (postId,userAvatar,userName) =>{
 		url:'/pages/postContent/postContent?postId='+postId+'&userAvatar='+userAvatar+'&userName='+userName,
 	});
 }
+const isClear = ref(false)
+const resetSearch = () => {
+	isSearch.value = false
+  isClear.value = true; // 触发清除搜索框
+  setTimeout(() => {
+    isClear.value = false; // 延迟一段时间后恢复 false，确保清除动作被触发
+  }, 100);
+};
+
+//监听Header组件选择校区
+const changeSchool = (Code) =>{
+	console.log('postBar',Code);
+	resetSearch(); // 选择校区后清空搜索框
+	schoolCode.value = Code
+	post.value = []
+	noData.value = false
+	postId.value = ''
+	getPostList()
+}
+//搜索
+const getPostSearch = async () =>{
+	const res = await apiPostSearch({
+		query:query.value,
+		offset:offset.value,
+		limit:limit.value,
+		schoolCode: schoolCode.value
+	})
+	console.log(res);
+	// 提取 searchResult 数组中的 _formatted
+	const formattedPosts = res.data.searchResult.map(item => item._formatted);
+	console.log(formattedPosts);
+	post.value = [...post.value,...formattedPosts];
+	if(limit.value>res.data.searchResult.length) noData.value = true
+	console.log(post.value);
+}
+const offset = ref(0)
+const query = ref('')
+const isSearch = ref(false)//用于判断是否是搜索完的触底加载
+const search = async (value) =>{
+	console.log('postBar',value);
+	query.value=value
+	offset.value = 0
+	isSearch.value = true
+	post.value=[]
+	noData.value=false
+	getPostSearch()
+}
 const activeFilter = ref('全部');
 // 设置激活的筛选条件
 const setActiveFilter = (item) => {
   activeFilter.value = item;
   console.log(item);
+    resetSearch();
   if(item==='全部'){
 	  tag.value=''
   }else{
@@ -42,8 +91,9 @@ const getPostList = async()=>{
 		userId:uni.getStorageSync('userId'),
 		postId:postId.value,
 		limit:limit.value,
-		schoolCode:'11819',
-		tag:tag.value
+		schoolCode:schoolCode.value,
+		tag:tag.value,
+		type:''
 	})
 	console.log(res)
 	post.value = [...post.value,...res.data];
@@ -58,34 +108,12 @@ const buttonColors = {
   '休闲': 'linear-gradient(to top,#2196F3,#99d4fb)',
   '学习': 'linear-gradient(to top,#9C27B0,#e7aeff)',
   '运动': 'linear-gradient(to top,#07cb73,#0aff91)',
-  '游戏': 'linear-gradient(to top,#8BC34A,#b9f55d)',
+  '寻物': 'linear-gradient(to top,#8BC34A,#b9f55d)',
   '干饭': 'linear-gradient(to top,#dfc833,#e9ff86)',
-  '旅行': 'linear-gradient(to top,#FF5722,#ffb870)',
+  '选课': 'linear-gradient(to top,#FF5722,#ffb870)',
   '其他': 'linear-gradient(to top,#9E9E9E,#c6c6c6)',
 };
 
-const formatDate = (dateStr) => {
-  const now = new Date();
-  dateStr = dateStr.replace(" ", "T");
-  const date = new Date(dateStr);
-  const diff = now.getTime() - date.getTime();
-  
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-  
-  if (diff < minute) {
-    return '刚刚';
-  } else if (diff < hour) {
-    return `${Math.floor(diff / minute)}分钟前`;
-  } else if (diff < day) {
-    return `${Math.floor(diff / hour)}小时前`;
-  } else if (diff < 7 * day) {
-    return `${Math.floor(diff / day)}天前`;
-  } else {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  }
-};
 
 const scrollTop = ref(0);  // 用于记录滚动的位置
 const fixedTop = ref(false); // 判断是否固定
@@ -102,24 +130,33 @@ const scrolltolower = async () => {
 		return
 	}
     console.log('触底加载帖子');
-	postId.value=post.value[post.value.length-1].discussPostId
-	isRefreshing.value = true
-	const res = await getPostList()
-	isRefreshing.value = false
+	if(isSearch.value){ //搜索完的触底加载
+		offset.value += limit.value;
+		isRefreshing.value = true
+		getPostSearch();
+		isRefreshing.value = false
+	}else{ //没搜索的触底加载
+		postId.value=post.value[post.value.length-1].discussPostId
+		isRefreshing.value = true
+		const res = await getPostList()
+		isRefreshing.value = false
+	}
 };
 
 //插件z-paging的下拉刷新
 const paging = ref()
 const queryList = () =>{
 	// console.log(pageNo,pageSize);
+	resetSearch();
 	setTimeout(() =>{
 		noData.value = false
 			 apigetPostList({
 				userId:uni.getStorageSync('userId'),
 				postId:'',
 				limit:limit.value,
-				schoolCode:'11819',
-				tag:tag.value
+				schoolCode:schoolCode.value,
+				tag:tag.value,
+				type:''
 			}).then(res=>{
 				console.log(res);
 				paging.value.complete(res.data);
@@ -139,7 +176,7 @@ const queryList = () =>{
 		<view class="container">
 			  <scroll-view scroll-y style="height: 100vh;" @scroll="onScroll" @scrolltolower="scrolltolower">
 			     <view class="top" :class="{ fixed: fixedTop }">
-				  	<Header page="PostBar"></Header>
+				  	<Header page="PostBar" :clear="isClear" @changeSchool="changeSchool" @search="search"></Header>
 				  	<view class="btns">
 				  	  <view class="filter-item" :class="{ active: activeFilter === '全部' }" :style="{ backgroundColor: activeFilter === '全部' ? buttonColors['全部'] : '' }" @tap="setActiveFilter('全部')">全部</view>
 				  	  <view
@@ -155,7 +192,7 @@ const queryList = () =>{
 				  	</view>
 				  	<view class="bottomBtns">
 				  	  <view 
-				  	    v-for="(item, index) in ['运动', '游戏', '干饭', '旅行', '其他']" 
+				  	    v-for="(item, index) in ['运动', '寻物', '干饭', '选课', '其他']" 
 				  	    :key="index" 
 				  	    class="filter-item"
 				  	    :class="{ active: activeFilter === item }"
@@ -172,10 +209,10 @@ const queryList = () =>{
 						 </view>
 						 <view class="mright" hover-class="post-card-hover">
 						 	<view class="title">
-						 		<text>{{item.title}}</text>
+						 		<rich-text space="nbsp" :nodes="item.title"></rich-text>
 						 	</view>
 							<view class="content">
-								<text>{{item.content}}</text>
+								<rich-text space="nbsp" :nodes="item.content"></rich-text>
 							</view>
 							<view class="time">
 								<text>{{ formatDate(item.createTime) }}</text>
@@ -184,6 +221,9 @@ const queryList = () =>{
 				</view>
 				<view v-if="noData || post.length>0">
 					<uni-load-more :status="noData?'noMore':'loading'"></uni-load-more>
+				</view>
+				<view v-if="noData" style="display: flex;justify-content: center;">
+					<image style="height: 100%;" mode="widthFix" src="../../../static/noData.png"></image>
 				</view>
 			  </scroll-view>
 		</view>
@@ -254,25 +294,22 @@ const queryList = () =>{
   color: #fff;
   border-radius: 10rpx;
 }
-.post-card-hover {
- background-color: #eee;
-}
+
 .main{
 	display: flex;
 	padding: 10rpx 30rpx;
-	transition: transform 0.1s ease-in-out;
+	transition: transform 0.2s ease-in-out;
 	&:active{
 		transform: scale(0.98);
 	}
 	.mleft{
 		width: 15%;
-		// height: 180rpx;
+
 		display: flex;
 		justify-content: center;
 		align-items: center;
 		border-radius: 20rpx 0 0 20rpx;
-		border: 1px solid #333;
-		box-shadow: 0 0 10rpx rgba(0, 0, 0, 0.1);
+		border: 1px solid #222;
 		border-right: none;
 		.vertical-text {
 			letter-spacing: 20rpx;
@@ -285,10 +322,8 @@ const queryList = () =>{
 	}
 	.mright{
 		width: 85%;
-		// height: 180rpx;
-		// line-height: 160rpx;
-		border: 1px solid #333;
-		box-shadow: 0 0 10rpx rgba(0, 0, 0, 0.1);
+
+		border: 1px solid #222;
 		border-left: none;
 		border-radius: 0 20rpx 20rpx 0;
 		.title{
@@ -296,8 +331,8 @@ const queryList = () =>{
 			display: flex;
 			justify-content: center;
 			align-items: center;
-	        padding: 10rpx;
-			text{
+	        padding: 10rpx 20rpx;
+			rich-text{
 				font-size: 30rpx;
 				font-weight: 600;
 				//超过一行显示省略号
@@ -310,7 +345,7 @@ const queryList = () =>{
 		.content{
 		    padding: 10rpx 20rpx;
 			font-size: 28rpx;
-			text{
+			rich-text{
 				//超过两行显示省略号
 				display: -webkit-box;
 				-webkit-box-orient: vertical;

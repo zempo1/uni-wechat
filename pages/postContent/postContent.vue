@@ -1,8 +1,10 @@
 <script setup>
 import { nextTick, onMounted,getCurrentInstance } from 'vue';
+import {onShareAppMessage} from '@dcloudio/uni-app'
 import {apiPostDetail,apiPostCommentList,apiPostCollect,apiPostLike,apiPostComment,apiCommentLike,apiPostCommentChildList,apiCommentReply,apiCommentDelete} from '../../api/post.js'
 import {baseUrl} from '../../utils/request.js'
 import {deleteFile} from '@/api/file.js'
+import {formatTimestamp,formatDate} from '@/common/formatTime.js'
     const postId = ref()
 	const userAvatar = ref()
 	const userName = ref()
@@ -63,30 +65,6 @@ import {deleteFile} from '@/api/file.js'
 		comments.value = [...comments.value,...res.data];
 		console.log(comments.value);
 	}
-	//截取评论时间
-	const formatTime = (time) =>{
-		const now = new Date(); // 获取当前时间
-		time = time.replace(" ", "T");
-		const timeDate = new Date(time); // 将传入的时间字符串转换为 Date 对象
-		const diffInSeconds = Math.floor((now - timeDate) / 1000); // 计算时间差，单位为秒
-		const diffInMinutes = Math.floor(diffInSeconds / 60); // 计算时间差，单位为分钟
-		const diffInHours = Math.floor(diffInSeconds / 3600); // 计算时间差，单位为小时
-		if(diffInMinutes < 1){
-			return '刚刚'
-		}else if (diffInMinutes < 60) {
-		    // 如果时间差小于 60 分钟，显示 "n分钟前"
-		    return `${diffInMinutes}分钟前`;
-		} else if (diffInHours < 24) {
-	        // 如果时间差小于 24 小时，显示 "n小时前"
-	        return `${diffInHours}小时前`;
-		}else if(diffInHours < 48 ){
-		    //显示昨天
-		    return '昨天'
-	    }else {
-	       //time为 "2025-02-16T14:35:00",截取掉后面的分钟和秒数，只保留年月日如2025-02-16
-		    return time.replace(/T(\d{2}:\d{2}:\d{2})$/, ''); // 去掉时间部分，得到 "2025-02-16"
-	    }
-	}
 	//帖子数据
 	const post = ref([])
 	const previewImage = (index) => {
@@ -122,19 +100,6 @@ import {deleteFile} from '@/api/file.js'
 			},300)
 		}
 	}
-//获取当前时间
-function formatTimestamp(timestamp) {
-    const date = new Date(timestamp); // 将时间戳转换为 Date 对象
-    const year = date.getFullYear();  // 获取年份
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // 获取月份，注意要 +1，且格式化为2位数
-    const day = String(date.getDate()).padStart(2, '0'); // 获取日期，格式化为2位数
-    const hours = String(date.getHours()).padStart(2, '0'); // 获取小时，格式化为2位数
-    const minutes = String(date.getMinutes()).padStart(2, '0'); // 获取分钟，格式化为2位数
-    const seconds = String(date.getSeconds()).padStart(2, '0'); // 获取秒，格式化为2位数
-
-    // 拼接成目标格式
-    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-}
 let lastClickTime = 0; // 记录最后一次点赞的时间
 const THROTTLE_TIME = 300; // 节流时间，单位是毫秒，比如1秒
 // 点击点赞帖子
@@ -257,16 +222,34 @@ const clickCommentHeart = async (item,type) =>{
 	}
 	//评论详情触底加载更多
     const scrolltolower = async () =>{
-		console.log(noData.value);
 		if(noData.value || isRefreshing.value){
 			return
 		}
 		console.log('触底加载帖子');
 		commentId.value=comments.value[comments.value.length-1].commentId
 		console.log(commentId.value);
-		isRefreshing.value = true
-		getPostCommentList();
-		isRefreshing.value = false
+		if(sortTypeIndex.value===2){
+			const likeCount = comments.value[comments.value.length-1].likeCount//最后一条评论的点赞数
+			console.log(likeCount);
+			isRefreshing.value = true
+			const res = await apiPostCommentList({
+				userId: uni.getStorageSync('userId'),
+				postId: postId.value,
+				commentId: commentId.value,
+				limit: limit.value,
+				sortType: sortTypeIndex.value,
+				likeCount:likeCount
+			})
+			console.log(res);
+			if(limit.value>res.data.length) noData.value = true
+			comments.value = [...comments.value,...res.data];
+			isRefreshing.value = false
+		}else{
+			isRefreshing.value = true
+			getPostCommentList();
+			isRefreshing.value = false
+		}
+		
 	}
 	//点击下面评论弹出评论框并自动获取焦点
 	const popup = ref()
@@ -281,7 +264,7 @@ const clickCommentHeart = async (item,type) =>{
 		isFocus.value = false
 	}
 	//
-	const imageUrl = ref([])
+	const imageId = ref([])
     const addPicture = async (e) =>{
 		console.log(e);
 		await uni.uploadFile({
@@ -298,7 +281,7 @@ const clickCommentHeart = async (item,type) =>{
 			},
 			success: (res) => {
 				console.log(JSON.parse(res.data));
-				imageUrl.value.push(JSON.parse(res.data).data.imageUrl)
+				imageId.value.push(JSON.parse(res.data).data.imageId)
 			},
 			fail: (err) => {
 				console.log(err);
@@ -310,7 +293,7 @@ const clickCommentHeart = async (item,type) =>{
 		})
 	}
 	const delPicture = async (e) =>{
-		const res = await deleteFile(imageUrl.value[0])
+		const res = await deleteFile(imageId.value[0])
 		console.log(res);
 	}
 	const content = ref('')
@@ -323,22 +306,23 @@ const clickCommentHeart = async (item,type) =>{
 			userId:uni.getStorageSync('userId'),
 			postId:postId.value,
 			content:content.value,
-			imageUrl:imageUrl.value,
+			images:imageId.value,
 			commentTime:commentTime
 		})
 		console.log(res);
 		content.value = ''
-		imageUrl.value = []
+		imageId.value = []
 		popup.value.close()
 		comments.value=[]
 		commentId.value = ''
+		isFocus.value = false
 		uni.showToast({
 			title: '发布成功',
 			icon: 'none'
 		})
 		getPostCommentList()
 	}
-	//评论的图片样式
+	//编辑评论的图片样式
 	const imageStyles = reactive({
 	  width: 44,
 	  height: 36,
@@ -375,7 +359,9 @@ const clickCommentHeart = async (item,type) =>{
 		replayTo.value = item.commentId //默认为回复楼主的评论
 		childComments.value = []
 		commentCopy.value = item
-		commentTime.value = formatTime(item.commentTime)
+		console.log('图片',commentCopy.value);
+		console.log(commentCopy.value.images.length);
+		commentTime.value = formatDate(item.commentTime)
 		getPostCommentChildList(item)
 		popupOpenComment.value.open()
 	}
@@ -395,6 +381,7 @@ const clickCommentHeart = async (item,type) =>{
 	const isRefreshingChild = ref(false)
 	const noDataChild = ref(false)
 	const popScrolltolower = async () =>{
+		console.log(noDataChild.value);
 		if(noDataChild.value || isRefreshingChild.value){
 			return
 		}
@@ -460,6 +447,13 @@ const clickCommentHeart = async (item,type) =>{
 			icon: 'none'
 		})
 	}
+	//查看评论图片
+	const previewCommentImage = (image) =>{
+		console.log(image);
+		uni.previewImage({
+			urls:[image]
+		})
+	}
 	
 	const popupDel = ref()
 	const isLongTap = ref()//是否触发长按
@@ -487,6 +481,7 @@ const clickCommentHeart = async (item,type) =>{
 		uni.showModal({
 				title: '提示',
 				content: '确定删除该评论吗？',
+				confirmColor: '#5cc280',
 				success: async function (re) {
 					if (re.confirm) {
 						if(type.value==='1'){
@@ -555,6 +550,13 @@ const clickCommentHeart = async (item,type) =>{
 	const popLongtapClose = () =>{
 		popupDel.value.close()
 	}
+	//转发给好友
+	onShareAppMessage((e)=>{
+		return {
+			title: 'Z共享',
+			url:'/pages/postContent/postContent?postId='+postId.value+'&userAvatar='+userAvatar.value+'&userName='+userName.value,
+		}
+	})
 </script>
 
 <template>
@@ -563,10 +565,13 @@ const clickCommentHeart = async (item,type) =>{
 		<scroll-view scroll-y style="height: 100vh;" @scrolltolower="scrolltolower">
 		<view class="header">
 			<image class="avatar" :src="userAvatar || '../../static/avatar0.png'" mode="aspectFill"></image>
-			<view class="username-title">
+			<view class="username-time">
 				<text class="username">{{userName}}</text>
-				<text class="title">{{post.title}}</text>
+				<text class="time">{{formatDate(post.createTime)}}</text>
 			</view>
+		</view>
+		<view class="title">
+			<text user-select="true">{{post.title}}</text>
 		</view>
 		<view class="content">
 			<text user-select="true">{{post.content}}</text>
@@ -628,7 +633,7 @@ const clickCommentHeart = async (item,type) =>{
 						<image class="avatar" :src="item.userAvatar || '../../static/avatar0.png'" mode="aspectFill"></image>
 						<view class="username-time">
 							<text class="username">{{item.userName}}</text>
-							<text class="time">{{formatTime(item.commentTime)}}</text>
+							<text class="time">{{formatDate(item.commentTime)}}</text>
 						</view>
 					</view>
 					<view class="heart">
@@ -642,8 +647,13 @@ const clickCommentHeart = async (item,type) =>{
 				</view>
 				<view class="comment-text">
 					<!-- 该帖子的评论 -->
-					<view style="margin-bottom: 15rpx;font-size: 34rpx;"  @longtap="longtap(item,'1')">
-						<text style="font-size: 34rpx;">{{item.content}}</text>
+					<view @longtap="longtap(item,'1')">
+						<view style="margin-bottom: 15rpx;font-size: 34rpx;" >
+							<text style="font-size: 34rpx;">{{item.content}}</text>
+						</view>					
+						<view class="post-images" v-if="item.images.length" >
+						    <image @tap.stop="previewCommentImage(item.images[0])" :src="item.images[0]" mode="aspectFill" class="post-image"></image>
+						</view>
 					</view>
 					<!-- 回复评论的评论 -->
 					<view class="reply" v-if="item.replyList.length>0">
@@ -659,9 +669,11 @@ const clickCommentHeart = async (item,type) =>{
 				</view>
 			</view>
 		</view>
-		<!-- <view class="foot"></view> -->
-		<view v-if="noData || childComments.length>0" style="height:200rpx;padding: 20rpx;">
+		<view v-if="noData || childComments.length>0" style="padding: 20rpx;">
 			<uni-load-more :status="noData?'noMore':'loading'"></uni-load-more>
+		</view>
+		<view v-if="noData" style="display: flex;justify-content: center;">
+			<image style="height: 100%;" mode="widthFix" src="../../static/noData.png"></image>
 		</view>
 		</scroll-view>
 	</view>
@@ -677,11 +689,11 @@ const clickCommentHeart = async (item,type) =>{
 	<uni-popup ref="popup" type="bottom" border-radius="8rpx 8rpx 0 0" @maskClick="maskClick">
 		<view class="bottom">
 			<view class="pop-input-box">
-				<textarea class="input" v-model="content" auto-height maxlength="500" :show-confirm-bar="false" :cursor-spacing="105" :focus="isFocus" placeholder="发一条友善的评论" />
+				<textarea class="input" v-model="content" auto-height maxlength="500" :show-confirm-bar="false" :cursor-spacing="110" :focus="isFocus" placeholder="发一条友善的评论" />
 			</view>
 			<view class="pop-btn-box">
 				<view class="img">
-					<uni-file-picker limit="1"  :maxSize="8" :imageStyles="imageStyles" file-mediatype="image" @select="addPicture" @delete="delPicture">
+					<uni-file-picker :value="imageId" limit="1"  :maxSize="8" :imageStyles="imageStyles" file-mediatype="image" @select="addPicture" @delete="delPicture">
 						<uni-icons type="image" size="40"></uni-icons>
 					</uni-file-picker>
 				</view>
@@ -716,8 +728,11 @@ const clickCommentHeart = async (item,type) =>{
 							</uni-icons>
 						</view>
 					</view>
-					<view class="comment-text">
-						<text style="margin-bottom: 15rpx;font-size: 34rpx;">{{commentCopy.content}}</text>
+					<view class="comment-text" style="margin-bottom: 15rpx;font-size: 34rpx;">
+						<text user-select>{{commentCopy.content}}</text>
+					</view>
+					<view class="post-images" v-if="commentCopy.images?.length>0" style="margin-left: 110rpx;" >
+					    <image @tap="previewCommentImage(commentCopy.images[0])" :src="commentCopy.images[0]" mode="aspectFill" class="post-image"></image>
 					</view>
 				</view>
 				<!-- 子评论列表 -->
@@ -727,7 +742,7 @@ const clickCommentHeart = async (item,type) =>{
 							<image class="avatar" :src="item.userAvatar || '../../static/avatar0.png'" mode="aspectFill"></image>
 							<view class="username-time">
 								<text class="username">{{item.userName}}</text>
-								<text class="time">{{formatTime(item.commentTime)}}</text>
+								<text class="time">{{formatDate(item.commentTime)}}</text>
 							</view>
 						</view>
 						<view class="heart">
@@ -744,14 +759,14 @@ const clickCommentHeart = async (item,type) =>{
 						<text v-else style="margin-bottom: 15rpx;font-size: 34rpx;">回复 <text style="color: #50a86f;">@{{item.replyToName}}</text>：{{item.content}}</text>
 					</view>
 				</view>
-				<view v-if="noDataChild || comments.length>0" style="height:200rpx;padding: 20rpx;">
+				<view v-if="noDataChild || comments.length>0" style="padding: 20rpx;">
 					<uni-load-more :status="noDataChild?'noMore':'loading'"></uni-load-more>
 				</view>
 				<!-- 底部发布评论 -->
 				<view class="bottom">
 					<view class="pop-comment-inputBox">
 						<view class="comment-input">
-							<textarea class="comment-textarea" v-model="replyContent" @blur="blur" :focus="isFocus" auto-height maxlength="500" :show-confirm-bar="false" :cursor-spacing="105" :placeholder="placeholder"></textarea>
+							<textarea class="comment-textarea" v-model="replyContent" @blur="blur" :focus="isFocus" auto-height maxlength="500" :show-confirm-bar="false" :cursor-spacing="110" :placeholder="placeholder"></textarea>
 						</view>
 						<text class="comment-btn" @tap="sendReply()">发送</text>
 					</view>
@@ -790,7 +805,7 @@ const clickCommentHeart = async (item,type) =>{
 		border-radius: 50%;
 		margin-right: 20rpx;
 	}
-	.username-title {
+	.username-time {
 		display: flex;
 		flex-direction: column;
 		.username {
@@ -799,12 +814,22 @@ const clickCommentHeart = async (item,type) =>{
 			color: #50a86f;
 			font-weight: 600;
 		}
-		.title {
-			font-size: 34rpx;
-			font-weight: 600;
-			color: #000;
+		.time {
+			font-size: 26rpx;
+			color: #999999;
 		}
 	}
+}
+.title{
+	font-size: 32rpx;
+	font-weight: 600;
+	padding: 0 20rpx;
+	
+}
+.content{
+	margin: 10rpx 0;
+	padding: 20rpx;
+	font-size: 32rpx;
 }
 .bottom {
 	position: fixed;
@@ -866,11 +891,7 @@ const clickCommentHeart = async (item,type) =>{
 		font-size: 28rpx;
 	}
 }
-.content{
-	margin: 10rpx 0;
-	padding: 20rpx;
-	font-size: 32rpx;
-}
+
 /* 图片九宫格布局 */
 .imageBox {
     margin-bottom: 10px;
@@ -891,7 +912,7 @@ const clickCommentHeart = async (item,type) =>{
 .imageBox1{
 	padding: 0 20rpx;
     .image1{
-		// width: 100%;
+		border-radius: 12rpx;
 	}
 }
 .actions{
@@ -942,10 +963,6 @@ const clickCommentHeart = async (item,type) =>{
 		}
 	}
 }
-.foot{
-	background-color: #f5f5f5;
-	height: 200rpx;
-}
 .comment{;
 	border-bottom: 2px solid #e6e6e6;
 	padding-bottom: 15rpx;
@@ -983,6 +1000,16 @@ const clickCommentHeart = async (item,type) =>{
 }
 .comment-text{
 	margin-left: 90rpx;
+}
+.post-images {
+  margin-bottom: 10rpx;
+}
+
+.post-image {
+  width: 250rpx;
+  height: 220rpx;
+  border-radius: 12rpx;
+  background-color: #f5f5f5;
 }
 .reply{
 	background: #f3f3f3;

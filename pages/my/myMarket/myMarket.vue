@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue';
 import {getUserMarket} from '@/api/user.js'
 import {delMarketPost,finishMarketPost} from '@/api/market.js'
-
+import {formatDate} from '@/common/formatTime.js'
 
 onMounted(async () => {
   isRefreshing.value = true;
@@ -60,28 +60,6 @@ const loadMore = async () => {
   isRefreshing.value = false
 };
 
-const formatDate = (dateStr) => {
-  const now = new Date();
-  dateStr = dateStr.replace(" ", "T");
-  const date = new Date(dateStr);
-  const diff = now.getTime() - date.getTime();
-  
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-  
-  if (diff < minute) {
-    return '刚刚';
-  } else if (diff < hour) {
-    return `${Math.floor(diff / minute)}分钟前`;
-  } else if (diff < day) {
-    return `${Math.floor(diff / hour)}小时前`;
-  } else if (diff < 7 * day) {
-    return `${Math.floor(diff / day)}天前`;
-  } else {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  }
-};
 
 const formatNumber = (num) => {
   if (num >= 10000) {
@@ -93,6 +71,10 @@ const formatNumber = (num) => {
 };
 
 const goToDetail = (tradePostId) => {
+	if(isLongTap.value){
+		isLongTap.value = false
+		return
+	}
     uni.navigateTo({
         url: `/pages/market/marketContent/marketContent?tradePostId=${tradePostId}`,
       });
@@ -101,21 +83,27 @@ const goToDetail = (tradePostId) => {
 const popup = ref()
 const currentPostId = ref()
 const currentPostStatus = ref()
-const openDel = (postId,status) =>{
+const currentSchoolCode = ref()
+const isLongTap = ref(false)
+const openDel = (post) =>{
 	popup.value.open()
-	currentPostId.value = postId
-	currentPostStatus.value = status
+	isLongTap.value = true
+	currentPostId.value = post.tradePostId
+	currentPostStatus.value = post.status
+	currentSchoolCode.value = post.schoolCode
 	console.log(currentPostId.value);
 }
 	const changeStatus = () =>{
 		uni.showModal({
 			title: '提示',
 			content: '确定已经完成交易？',
+			confirmColor: '#5cc280',
 			success: async (re) => {
 				if (re.confirm) {
 					const res = await finishMarketPost({
 						userId: uni.getStorageSync('userId'),
-						postId: currentPostId.value
+						postId: currentPostId.value,
+						schoolCode: currentSchoolCode.value
 					})
 					console.log(res);
 					if(res.code===200){
@@ -134,11 +122,13 @@ const del = () =>{
 	uni.showModal({
 		title: '提示',
 		content: '确定要删除该帖子吗？',
+		confirmColor: '#5cc280',
 		success: async (re) => {
 			if (re.confirm) {
 				const res = await delMarketPost({
 					userId: uni.getStorageSync('userId'),
-					postId: currentPostId.value
+					postId: currentPostId.value,
+					schoolCode: currentSchoolCode.value
 				})
 				console.log(res);
 				if(res.code===200){
@@ -155,6 +145,7 @@ const del = () =>{
 }
 const popClose = () =>{
 	popup.value.close()
+	isLongTap.value = false
 }
  const paging = ref()
    const queryList = () =>{
@@ -203,8 +194,8 @@ const popClose = () =>{
 		  @scrolltolower="loadMore"
 		>
 		  <view v-if="posts.length === 0" class="empty-state">
-		    <!-- <image class="empty-image" :src="emptyImageUrl" mode="aspectFit"></image> -->
-		    <text class="empty-text">还没有发布任何帖子哦</text>
+		    <image mode="widthFix" src="../../../static/noData.png"></image>
+		    <text class="empty-text">还没有任何数据哦</text>
 		  </view>
 		
 		  <view v-else class="post-container">
@@ -213,12 +204,12 @@ const popClose = () =>{
 		      :key="post.tradePostId" 
 		      class="post-card"
 		      @click="goToDetail(post.tradePostId)"
-		      hover-class="post-card-hover"
+			  @longtap="openDel(post)"
 		    >
 		      <view class="post-header">
 		        <text class="post-type">{{types[post.type]}}</text>
 				<view>
-					<uni-icons type="bars" size="21" @tap.stop="openDel(post.tradePostId,post.status)"></uni-icons>
+					<uni-icons type="bars" size="21" @tap.stop="openDel(post)"></uni-icons>
 				</view>
 		      </view>
 		      <view class="post-main">
@@ -263,13 +254,13 @@ const popClose = () =>{
 <style lang="scss">
 page {
   height: 100%;
-  background-color: #f5f5f5;
 }
 
 .container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 90vh;
+  background-color: #f5f5f5;
 }
 
 .header {
@@ -340,10 +331,25 @@ page {
   padding: 32rpx;
   margin-bottom: 20rpx;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  transition: transform 0.3s ease-in-out;
+  &:active {
+    // border: 1px solid #50a86f;
+  	transform: scale(0.98);
+  }
+  &:active::before {
+  	transform: scaleX(1);
+  }
 }
-
-.post-card-hover {
-  background-color: #f3f3f3;
+.post-card::before{
+	content: '';
+	 position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 6rpx;
+	background: linear-gradient(90deg, transparent, rgba(64, 158, 255, 0.5), transparent);
+	transform: scaleX(0);
+	 transition: transform 0.3s ease;
 }
 
 .post-header {

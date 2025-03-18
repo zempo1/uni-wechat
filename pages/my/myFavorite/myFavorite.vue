@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import {getUserCollect} from '@/api/user.js'
 import {apiPostDelete} from '@/api/post.js'
+import {formatDate} from '@/common/formatTime.js'
 
 onMounted(async () => {
   isRefreshing.value = true;
@@ -59,28 +60,6 @@ const loadMore = async () => {
   isRefreshing.value = false
 };
 
-const formatDate = (dateStr) => {
-  const now = new Date();
-  dateStr = dateStr.replace(" ", "T");
-  const date = new Date(dateStr);
-  const diff = now.getTime() - date.getTime();
-  
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-  
-  if (diff < minute) {
-    return '刚刚';
-  } else if (diff < hour) {
-    return `${Math.floor(diff / minute)}分钟前`;
-  } else if (diff < day) {
-    return `${Math.floor(diff / hour)}小时前`;
-  } else if (diff < 7 * day) {
-    return `${Math.floor(diff / day)}天前`;
-  } else {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  }
-};
 
 const formatNumber = (num) => {
   if (num >= 10000) {
@@ -163,7 +142,7 @@ const goToDetail = (post) => {
 	    @scrolltolower="loadMore"
 	  >
 	    <view v-if="posts.length === 0" class="empty-state">
-	      <!-- <image class="empty-image" :src="emptyImageUrl" mode="aspectFit"></image> -->
+	      <image mode="widthFix" src="../../../static/noData.png"></image>
 	      <text class="empty-text">还没有收藏任何帖子哦</text>
 	    </view>
 	
@@ -173,7 +152,6 @@ const goToDetail = (post) => {
 	        :key="post.discussPostId" 
 	        class="post-card"
 	        @click="goToDetail(post)"
-	        hover-class="post-card-hover"
 	      >
 	        <view class="post-header">
 	          <view class="post-title-container">
@@ -225,13 +203,12 @@ const goToDetail = (post) => {
 <style lang="scss">
 page {
   height: 100%;
-  background-color: #f5f5f5;
 }
 
 .container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100vh;
   background-color: #f5f5f5;
 }
 
@@ -270,11 +247,13 @@ page {
   padding: 32rpx;
   margin-bottom: 20rpx;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease-in-out;
+  &:active {
+    border: 1px solid #50a86f;
+	transform: scale(0.98);
+  }
 }
 
-.post-card-hover {
-  background-color: #f3f3f3;
-}
 
 .post-header {
   display: flex;

@@ -1,6 +1,6 @@
 <template>
 	<view class="uni-searchbar">
-		<view :style="{borderRadius:radius+'px',backgroundColor: bgColor}" class="uni-searchbar__box"
+		<view :style="searchBoxStyle" class="uni-searchbar__box"
 			@click="searchClick">
 			<view class="uni-searchbar__box-icon-search">
 				<slot name="searchIcon">
@@ -116,7 +116,8 @@
 			return {
 				show: false,
 				showSync: false,
-				searchVal: ''
+				searchVal: '',
+				isFocused: false // 用于控制边框状态
 			}
 		},
 		computed: {
@@ -125,6 +126,13 @@
 			},
 			placeholderText() {
 				return this.placeholder || t("uni-search-bar.placeholder")
+			},
+			searchBoxStyle() {
+					return {
+						borderRadius: this.radius + 'px',
+						backgroundColor: this.bgColor,
+						border: this.isFocused ? '1px solid #59ac80' : 'none' // 控制边框颜色
+					};
 			}
 		},
 		watch: {
@@ -171,6 +179,7 @@
 		},
 		methods: {
 			searchClick() {
+				this.isFocused = true; // 设置边框
 				if(this.readonly) return
 				if (this.show) {
 					return
@@ -219,6 +228,7 @@
 				// #ifdef APP-PLUS
 				plus.key.hideSoftKeybord()
 				// #endif
+				this.isFocused = false; // 失去焦点移除边框
 				this.$emit("blur", {
 					value: this.searchVal
 				})

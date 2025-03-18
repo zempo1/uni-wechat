@@ -1,13 +1,12 @@
 const baseUrl = 'http://8.134.200.160:20611';
-// const baseUrl = 'http://4gi3rw.natappfree.cc';
-
+// const baseUrl = 'http://6gk5ef.natappfree.cc'
 export function request(config = {}) {
   let { url, data = {}, method = 'GET', header = {} } = config;
 
   // 拼接完整的 URL
   url = baseUrl + url;
 
-  // 返回 Promise
+  //返回 Promise
   return new Promise((resolve, reject) => {
     uni.request({
       url,
@@ -19,12 +18,34 @@ export function request(config = {}) {
           // 请求成功并且业务状态码为 200
           resolve(res.data);
         } else {
-          // 处理其他业务状态码
-          uni.showToast({
-            title: res.data.info || '请求失败',
-            // content: res.data.message || '请求失败',
-            icon: 'none'
-          });
+			if(!uni.getStorageSync('refreshToken')){
+				uni.showModal({
+					title:'提示',
+				    content:'请先登录才能使用此功能',
+					showCancel: false,
+					confirmText: '去登录',
+					confirmColor: '#5cc280',
+				    success: async (result) =>{
+				        if(result.confirm){
+				      	    uni.switchTab({
+				      	    	url:'/pages/my/my'
+				      	    })
+				        }
+				    },
+					fail: (err) => {
+						console.error('Error:', err)
+						uni.showToast({
+						  title: '请重试',
+						  icon: 'none'
+						}) 
+					}
+				})
+			}
+          //处理其他业务状态码
+          // uni.showToast({
+          //   title: res.data.info || '请求失败',
+          //   icon: 'none'
+          // });
           reject(res.data);
         }
       },

@@ -44,6 +44,8 @@ const handleLogin = async () => {
 			   uni.setStorageSync('userId',loginResult.data.userId)
 			   uni.setStorageSync('refreshToken',loginResult.data.refreshToken)
 			   uni.setStorageSync('accessToken',loginResult.data.accessToken)
+			   //存入学校代号
+			   uni.setStorageSync('schoolCode',loginResult.data.school.schoolCode)
 			   uni.showToast({
 			    title: '登录成功',
 			    icon: 'none'
@@ -51,8 +53,8 @@ const handleLogin = async () => {
 		  }
 		  //否则弹出登录框
 		  else{
-			   popup.value.open()
-			   uni.hideTabBar()
+			    popup.value.open()
+			    uni.hideTabBar()
 		  }
 	  }catch(err){
 		  console.error('Error:', err)
@@ -123,6 +125,21 @@ const submit = async () => {
 				  title: '登录成功',
 				  icon: 'success'
 				})
+				uni.showModal({
+					title:'提示',
+				    content:'个人信息暂未完善，请前往补充个人信息',
+					confirmText: '前往完善',
+					showCancel: false,
+					confirmColor: '#5cc280',
+				    success: async (result) =>{
+				        if(result.confirm){
+				      	   gotoMyInfo()
+				        }
+				    },
+					fail: (err) => {
+						console.error('Error:', err)
+					}
+				})
 			},
 			fail: (err) => {
 				console.log(err)
@@ -176,9 +193,17 @@ const gotoMyMarket = () =>{
 	})
 }
 const loginOut = () => {
+	if(!uni.getStorageSync('refreshToken')){
+		uni.showToast({
+		  title: '请先登录',
+		  icon: 'none'
+		})
+		return
+	}
     uni.showModal({
     	title:'提示',
 	    content:'确定要退出登录吗?',
+		confirmColor: '#5cc280',
 	    success: async (result) =>{
 	        if(result.confirm){
 	      	    //调用退出登录接口
@@ -205,6 +230,27 @@ const loginOut = () => {
 onLoad(()=>{
 	user.value.avatar = uni.getStorageSync('avatar')
 	user.value.nickname = uni.getStorageSync('userName')
+})
+onShow(()=>{
+	if(uni.getStorageSync('refreshToken')){
+		if(!uni.getStorageSync('schoolCode')){
+			uni.showModal({
+				title:'提示',
+			    content:'学校校区暂未认证，请前往完善',
+				confirmText: '前往完善',
+				showCancel: false,
+				confirmColor: '#5cc280',
+			    success: async (result) =>{
+			        if(result.confirm){
+			      	   gotoMyInfo()
+			        }
+			    },
+				fail: (err) => {
+					console.error('Error:', err)
+				}
+			})
+		}
+	}
 })
 </script>
 
@@ -343,9 +389,10 @@ onLoad(()=>{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 25rpx 20rpx;
+  padding: 20rpx;
   border-bottom: 1px solid #eee;
   font-size: 32rpx;
+  height: 70rpx;
   position: relative;
   .left{
 	  display: flex;

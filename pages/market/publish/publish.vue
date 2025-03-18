@@ -79,6 +79,11 @@ const arrPicture = ref([])
 //添加图片
     const addPicture = async (e) => {
 		console.log(e);
+		//加载中
+		uni.showLoading({
+				title: '上传中',
+				mask: true
+			})
 		await uni.uploadFile({
 			url: baseUrl + '/api/v1/bazaar/post/image',
 			method: 'post',
@@ -104,6 +109,7 @@ const arrPicture = ref([])
 				console.log(newarr);				
 				arrPicture.value.push(newarr)
 				console.log(arrPicture.value);
+				uni.hideLoading()
 			},
 			fail: (err) => {
 				console.log(err);
@@ -139,7 +145,7 @@ const publish = () =>{
 			price: formData.value.price,
 			images: arrPicture.value,
 			contact: formData.value.phone,
-			schoolCode:'11819',
+			schoolCode:uni.getStorageSync('schoolCode'),
 			title:'1',
 			tags:[]
 		})

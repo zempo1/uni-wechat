@@ -1,23 +1,79 @@
 <script setup>
-import {getMarketPost} from '../../api/market.js'
+import {getMarketPost,searchMarketPost} from '../../api/market.js'
 onLoad(async ()=>{
 	getPostList()
 })
 const postId = ref('')
 const limit = ref(6)
+const mySchoolCode = ref(uni.getStorageSync('schoolCode'))
+const schoolCode = ref(uni.getStorageSync('schoolCode'))
 const typeIndex = ref('')
 const activeFilter = ref('全部')
-const change = (e) =>{
-	// if(e.detail.value[0]==='1'){
-	// 	status.value = 0
-	// }else{
-	// 	status.value = ''
-	// }
+
+const isClear = ref(false)
+const resetSearch = () => {
+	isSearch.value = false
+  isClear.value = true; // 触发清除搜索框
+  setTimeout(() => {
+    isClear.value = false; // 延迟一段时间后恢复 false，确保清除动作被触发
+  }, 100);
+};
+//监听Header组件选择校区
+const changeSchool = (Code) =>{
+	console.log('market',Code);
+	resetSearch();
+	schoolCode.value = Code
+	postId.value = ''
+	comPost.value = []
+	noData.value = false
+	getPostList()
 	
 }
+//搜索
+const getPostSearch = async () =>{
+	const res = await searchMarketPost({
+		query:query.value,
+		offset:offset.value,
+		limit:limit.value,
+		schoolCode:schoolCode.value
+	})
+	console.log(res);
+	// 提取 searchResult 数组中的 _formatted
+	const formattedPosts = res.data.searchResult.map(item => item._formatted);
+	console.log(formattedPosts);
+	comPost.value = [...comPost.value,...formattedPosts];
+	if(limit.value>res.data.searchResult.length) noData.value = true
+	console.log(comPost.value);
+}
+const offset = ref(0)
+const query = ref('')
+const search = async (value) =>{
+	console.log('market',value);
+	query.value = value
+	offset.value = 0
+	isSearch.value = true
+	comPost.value=[]
+	noData.value=false
+	getPostSearch()
+}
+// const onlyMyschool = ref(false)
+// const change = (e) =>{
+// 	console.log(e);
+// 	if(e.detail.value[0]==='1'){
+// 		schoolCode.value = uni.getStorageSync('schoolCode')
+// 		onlyMyschool.value = true
+// 	}else{
+// 		schoolCode.value = ''
+// 		onlyMyschool.value = false
+// 	}
+// 	 // 触发清空搜索，并通知 Header 更新校区
+// 	  resetSearch();
+// 	  changeSchool(schoolCode.value)
+// }
 // 设置激活的筛选条件
 const setActiveFilter = (item,index) => {
 	activeFilter.value = item;
+	resetSearch();
 	index-=1;
 	console.log(item);
 	console.log(index);
@@ -44,7 +100,8 @@ const getPostList = async()=>{
 		postId:postId.value,
 		limit:limit.value,
 		type:typeIndex.value,
-		status:0
+		status:0,
+		schoolCode:schoolCode.value
 	})
 	console.log(res);
 	comPost.value = [...comPost.value,...res.data];
@@ -66,14 +123,16 @@ const calPrice = (price) => {
 }
 const paging = ref()
 const queryList = () =>{
+	resetSearch();
 	setTimeout(() =>{
 		noData.value = false
 			 getMarketPost({
 				userId:uni.getStorageSync('userId'),
 				postId:'',
 				limit:limit.value,
-				type:'',
-				status:0
+				type:typeIndex.value,
+				status:0,
+				schoolCode:schoolCode.value
 			}).then(res=>{
 				console.log(res);
 				paging.value.complete(res.data);
@@ -83,16 +142,25 @@ const queryList = () =>{
 			})
 	},300)
 }
+const isSearch = ref(false)//用于判断是否是搜索完的触底加载
 const scrolltolower = async () =>{
 	if(noData.value || isRefreshing.value){
 		return
 	}
 	console.log('触底加载帖子');
-	postId.value=comPost.value[comPost.value.length-1].tradePostId
-	console.log(postId.value);
-	isRefreshing.value = true
-	const res = await getPostList()
-	isRefreshing.value = false
+	if(isSearch.value){ //搜索完的触底加载
+		offset.value += limit.value;
+		isRefreshing.value = true
+		getPostSearch();
+		isRefreshing.value = false
+	}else{
+		postId.value=comPost.value[comPost.value.length-1].tradePostId
+		console.log(postId.value);
+		isRefreshing.value = true
+		const res = await getPostList()
+		isRefreshing.value = false
+	}
+	
 }
 const gotoMarketContent = (tradePostId) =>{
 	console.log(tradePostId);
@@ -100,6 +168,7 @@ const gotoMarketContent = (tradePostId) =>{
 		url:'/pages/market/marketContent/marketContent?tradePostId='+tradePostId
 	})
 }
+
 </script>
 
 <template>
@@ -108,7 +177,7 @@ const gotoMarketContent = (tradePostId) =>{
 			<custom-refresher :status="refresherStatus" />
 		</template>
 		<template #top style=" box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">
-		    <Header page="market"></Header>
+		    <Header page="market" :clear="isClear"  @changeSchool="changeSchool" @search="search"></Header>
 		    <view class="filter-bar">
 		    	<view
 		    	    v-for="(item, index) in ['全部', '出售', '求购', '免费赠送']"
@@ -119,28 +188,35 @@ const gotoMarketContent = (tradePostId) =>{
 		    	>
 		    	  <text>{{item}}</text>
 		    	</view>
-		    	<view class="filter-bar-right">
+		    	<!-- <view class="filter-bar-right">
 					<checkbox-group @change="change">
 						<checkbox :value="1" style="transform:scale(0.7);"></checkbox>
 						<text>只看本校</text>
 					</checkbox-group>
-		    	</view>
+		    	</view> -->
 		    </view>
 		</template>
-		<scroll-view scroll-y style="height: 100vh;" @scrolltolower="scrolltolower">
-			<view class="container">
+		<scroll-view scroll-y style="height: 90vh;" @scrolltolower="scrolltolower">
+			<view v-if="comPost.length === 0" class="empty-state">
+			  <image mode="widthFix" src="../../static/noData.png"></image>
+			  <text class="empty-text">还没有任何数据哦</text>
+			  <button v-if="schoolCode===mySchoolCode" class="floating-button" @click="goToPublish"><img class="issue" src="../../static/issue.png" />我要发布</button>
+			</view>
+			<view v-else class="container">
 				<view class="Index">
 				    <!-- 瀑布流布局列表 -->
 				    <view class="pubuBox">
 				      <view class="pubuItem">
 				        <view class="item-masonry" v-for="(item, index) in comPost" :key="index" @tap="gotoMarketContent(item.tradePostId)">
-				          <image style="height: 450rpx;" v-if="item.image" :src="item.image" mode="aspectFill"></image>
+				          <image style="height: 450rpx;" v-if="item.image && item.image!=='null'" :src="item.image" mode="aspectFill"></image>
 						  <view v-else class="noimg">
-							  <text>{{item.content}}</text>
+							  <rich-text space="nbsp" :nodes="item.content"></rich-text>
 						  </view>
 				          <view class="listtitle">
 				            <!-- 这是没有高度的父盒子（下半部分） -->
-				            <view class="listtitle1">{{ item.content }}</view>
+				            <view class="listtitle1">
+								<rich-text space="nbsp" :nodes="item.content"></rich-text>
+							</view>
 				            <view class="listtitle2">
 				              <text class="listtitle2son">￥{{ calPrice(item.price) }}</text>
 							  <view class="buy">{{types[item.type]}}</view>
@@ -151,13 +227,32 @@ const gotoMarketContent = (tradePostId) =>{
 				    </view>
 				  </view>
 				 <!-- 悬浮发布按钮 -->
-				<button class="floating-button" @click="goToPublish"><img class="issue" src="../../static/issue.png" />我要发布</button>
+				<button v-if="schoolCode===mySchoolCode" class="floating-button" @click="goToPublish"><img class="issue" src="../../static/issue.png" />我要发布</button>
 			</view>
 		</scroll-view>
 	</z-paging>
 </template>
 
 <style lang="scss" scoped>
+	.empty-state {
+	  display: flex;
+	  flex-direction: column;
+	  align-items: center;
+	  justify-content: center;
+	  padding-top: 160rpx;
+	}
+	
+	// .empty-image {
+	//   width: 320rpx;
+	//   height: 320rpx;
+	//   margin-bottom: 32rpx;
+	// }
+	
+	.empty-text {
+	  font-size: 28rpx;
+	  color: #999999;
+	  margin-bottom: 48rpx;
+	}
 	.container {
 		padding: 5rpx;
 		box-sizing: border-box;
@@ -167,23 +262,26 @@ const gotoMarketContent = (tradePostId) =>{
 	.filter-bar {
 	  display: flex;
 	  align-items: center;
-	  font-size: 26rpx;
+	  justify-content: space-around;
+	  font-size: 28rpx;
 	  margin-bottom: 15rpx;
 	  padding: 0 15rpx 10rpx;
 	}
 	.filter-item{
 	   padding: 0 27rpx;
 	   padding-bottom: 10rpx;
-	   transition: color 0.2s ease-in-out, transform 0.2s ease-in-out;
+	   color: #222;
+	   transition: all 0.1s ease-in-out;
 	}
-	.filter-bar-right {
-	    margin-left: auto;
-	    padding: 0 27rpx;
-	}
+	// .filter-bar-right {
+	//     margin-left: auto;
+	//     padding: 0 27rpx;
+	// }
 	.filter-item.active {
 	  border-bottom: 2px solid rgb(11, 203, 136);
 	  color: rgb(11, 203, 136);
-	  transform: translateY(-4rpx);
+	  font-weight: 600;
+	  transform: scale(1.05);
 	}
 	
 	
@@ -298,7 +396,7 @@ const gotoMarketContent = (tradePostId) =>{
 			 width: 120rpx;
 			 height: 40rpx;
 			 margin-right: 10rpx;
-			 background-color: #59ac80;
+			 background-color: #5cc280;
 			 color: #FFFFFF;
 			 font-size: 26rpx;
 			 text-align: center;

@@ -4,10 +4,7 @@ import { request } from "../utils/request"
 export const apigetPostList = (data={}) =>{
 	return request({
 		url: '/api/v1/community/post',
-		data,
-		header: {
-		    'Authorization': uni.getStorageSync('accessToken')
-		}
+		data
 	})
 }
 //发布帖子
@@ -15,7 +12,10 @@ export const apiPost = (data={}) =>{
 	return request({
 		url: '/api/v1/community/post',
 		method: 'post',
-		data
+		data,
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken')
+		}
 	})
 }
 //点赞帖子
@@ -23,7 +23,10 @@ export const apiPostLike = (data={}) =>{
 	return request({
 		url: '/api/v1/community/post/like',
 		method: 'put',
-		data
+		data,
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken')
+		}
 	})
 }
 //收藏帖子
@@ -31,7 +34,10 @@ export const apiPostCollect = (data={}) =>{
 	return request({
 		url: '/api/v1/community/post/favorite',
 		method: 'put',
-		data
+		data,
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken')
+		}
 	})
 }
 //查询帖子详情
@@ -118,6 +124,16 @@ export const apiCommentDelete = (data={}) =>{
 		header: {
 		    'Authorization': uni.getStorageSync('accessToken'),
 			'Content-Type': 'application/json'
+		}
+	})
+}
+//社区搜索
+export const apiPostSearch = (data={}) =>{
+	return request({
+		url: '/api/v1/search/community',
+		data,
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken')
 		}
 	})
 }

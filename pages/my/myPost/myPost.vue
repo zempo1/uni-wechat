@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import {getUserDiscuss} from '@/api/user.js'
 import {apiPostDelete} from '@/api/post.js'
+import {formatDate} from '@/common/formatTime.js'
 
 onMounted(async () => {
   isRefreshing.value = true;
@@ -58,28 +59,6 @@ const loadMore = async () => {
   isRefreshing.value = false
 };
 
-const formatDate = (dateStr) => {
-  const now = new Date();
-  dateStr = dateStr.replace(" ", "T");
-  const date = new Date(dateStr);
-  const diff = now.getTime() - date.getTime();
-  
-  const minute = 60 * 1000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-  
-  if (diff < minute) {
-    return '刚刚';
-  } else if (diff < hour) {
-    return `${Math.floor(diff / minute)}分钟前`;
-  } else if (diff < day) {
-    return `${Math.floor(diff / hour)}小时前`;
-  } else if (diff < 7 * day) {
-    return `${Math.floor(diff / day)}天前`;
-  } else {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  }
-};
 
 const formatNumber = (num) => {
   if (num >= 10000) {
@@ -91,6 +70,10 @@ const formatNumber = (num) => {
 };
 
 const goToDetail = (postId) => {
+	if(isLongTap.value){
+		isLongTap.value = false
+			return
+	}
   const userAvatar = uni.getStorageSync('avatar');
   const userName = uni.getStorageSync('userName');
   uni.navigateTo({
@@ -127,20 +110,27 @@ const goToDetail = (postId) => {
 //点击菜单
 const popup = ref()
 const delPostId = ref()
-const openDel = (postId) =>{
+const isLongTap = ref(false)
+const schoolCode = ref()
+const openDel = (post) =>{
+	console.log(post);
 	popup.value.open()
-	delPostId.value = postId
+	isLongTap.value = true
+	delPostId.value = post.discussPostId
+	schoolCode.value = post.schoolCode
 	console.log(delPostId.value);
 }
 const del = () =>{
 	uni.showModal({
 		title: '提示',
 		content: '确定要删除该帖子吗？',
+		confirmColor: '#5cc280',
 		success: async (re) => {
 			if (re.confirm) {
 				const res = await apiPostDelete({
 					userId: uni.getStorageSync('userId'),
-					postId: delPostId.value
+					postId: delPostId.value,
+					schoolCode: schoolCode.value
 				})
 				console.log(res);
 				if(res.code===200){
@@ -157,6 +147,7 @@ const del = () =>{
 }
 const popClose = () =>{
 	popup.value.close()
+	isLongTap.value = false
 }
   const paging = ref()
    const queryList = () =>{
@@ -194,7 +185,7 @@ const popClose = () =>{
 			    @scrolltolower="loadMore"
 			  >
 			    <view v-if="posts.length === 0" class="empty-state">
-			      <!-- <image class="empty-image" :src="emptyImageUrl" mode="aspectFit"></image> -->
+			      <image mode="widthFix" src="../../../static/noData.png"></image>
 			      <text class="empty-text">还没有发布任何帖子哦</text>
 			    </view>
 			
@@ -204,15 +195,15 @@ const popClose = () =>{
 			        :key="post.discussPostId" 
 			        class="post-card"
 			        @click="goToDetail(post.discussPostId)"
-			        hover-class="post-card-hover"
+					@longtap="openDel(post)"
 			      >
 			        <view class="post-header">
 			          <view class="post-title-container">
 			            <text class="post-tag" :style="{ background: getTagColor(post.tag) }">{{ post.tag }}</text>
 			            <text class="post-title">{{ post.title }}</text>
 			          </view>
-						<view>
-							<uni-icons type="bars" size="18" @tap.stop="openDel(post.discussPostId)"></uni-icons>
+						<view class="bars">
+							<uni-icons type="bars" size="18" @tap.stop="openDel(post)"></uni-icons>
 						</view>
 			        </view>
 			        
@@ -258,13 +249,13 @@ const popClose = () =>{
 <style lang="scss">
 page {
   height: 100%;
-  background-color: #f5f5f5;
 }
 
 .container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 100vh;
+  background-color: #f5f5f5;
 }
 
 .header {
@@ -302,10 +293,25 @@ page {
   padding: 32rpx;
   margin-bottom: 20rpx;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  transition: transform 0.3s ease-in-out;
+  position: relative;
+  &:active::before {
+  	transform: scaleX(1);
+  }
+  &:active {
+    transform: scale(0.98);
+  }
 }
-
-.post-card-hover {
-  background-color: #f3f3f3;
+.post-card::before{
+	content: '';
+	 position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 6rpx;
+	background: linear-gradient(90deg, transparent, rgba(64, 158, 255, 0.5), transparent);
+	transform: scaleX(0);
+	 transition: transform 0.3s ease;
 }
 
 .post-header {
@@ -320,25 +326,37 @@ page {
   margin-right: 24rpx;
   display: flex;
   align-items: center;
+  min-width: 0; // 关键：防止 flex 项目撑开
+  .post-tag {
+    font-size: 24rpx;
+    color: #fff;
+    padding: 4rpx 16rpx;
+    border-radius: 8rpx;
+    margin-right: 16rpx;
+	  flex-shrink: 0; // 不允许缩小
+	  min-width: 55rpx; // 给定一个合理的最小宽度
+	  max-width: 60rpx; // 限制最大宽度，避免超长
+	  text-align: center;
+  }
+  
+  .post-title {
+      font-size: 28rpx;
+      font-weight: 600;
+      color: #333333;
+      flex-shrink: 1;  // 允许它收缩
+      max-width: calc(100% - 80rpx); // 防止挤压菜单栏
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+  }
+}
+.bars{
+	flex-shrink: 0;  // 防止被挤压
+	  width: 35rpx;  // 设置固定宽度
+	  display: flex;
+	  justify-content: center;
 }
 
-.post-tag {
-  font-size: 24rpx;
-  color: #fff;
-  padding: 4rpx 16rpx;
-  border-radius: 8rpx;
-  margin-right: 16rpx;
-}
-
-.post-title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #333333;
-  flex: 1;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
 
 .post-time {
   font-size: 24rpx;

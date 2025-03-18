@@ -5,6 +5,9 @@ export const deleteFile = (filePath) => {
     return request({
         url: `/api/v1/file/delete?filePath=${encodeURIComponent(filePath)}`,
         method: 'DELETE',
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken')
+		}
     })
 }
 //查询文件列表
@@ -23,6 +26,16 @@ export const viewFile = (data={}) => {
         url: '/api/v1/file/browse',
         method: 'put',
 		data,
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken')
+		}
+    })
+}
+//文件搜索
+export const searchFile = (data={}) => {
+    return request({
+        url: '/api/v1/search/file',
+        data,
 		header: {
 		    'Authorization': uni.getStorageSync('accessToken')
 		}

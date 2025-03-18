@@ -1,13 +1,19 @@
 <script setup>
-    import {getFileList,viewFile} from '@/api/file.js'
+    import {getFileList,viewFile,searchFile} from '@/api/file.js'
 	
 	onLoad(()=>{
 		getList()
 	})
+	// 监听滚动事件
+	const scrollTop = ref(0);  // 用于记录滚动的位置
+	const oldScrollTop = ref(0)
+	const onScroll = (e) => {
+	    oldScrollTop.value = e.detail.scrollTop;
+	};
 	const list = ref([])
 	const fileId = ref('')
-	const limit = ref(5)
-	const sortType = ref(0)
+	const limit = ref(6)
+	const sortType = ref(1)
 	const noData = ref(false)
 	const getList = async () =>{
 		const res = await getFileList({
@@ -22,25 +28,35 @@
 		if(limit.value>res.data.length) noData.value = true
 		console.log(list.value);
 	}
-	const activeFilter = ref(0);
+	const activeFilter = ref(1);
 	// 设置激活的筛选条件
 	const setActiveFilter = (item) => {
+		//重置搜索框
+		keyword.value=''
+		isSearch.value=false
 	    activeFilter.value = item;
 	    console.log(item);
+		list.value=[]
 		sortType.value = item
 		fileId.value = ''
-		list.value=[]
+		noData.value = false
+		//回到顶部
+		scrollTop.value = oldScrollTop.value;
+		nextTick(() => {
+		  scrollTop.value = 0;
+		});
 		getList()
 	};
 	
 	//判断文件类型
+	const fileTypeMap = {
+		pdf: '../../static/pdf.png',
+		doc: '../../static/word.png',
+		docx: '../../static/word.png',
+	};
 	const judgeType = (fileName) => {
 		const type = fileName.split('.')[1]
-		if(type === 'pdf'){
-			return '../../static/pdf.png'
-		}else if(type === 'doc' || type === 'docx'){
-			return '../../static/word.png'
-		}
+		return fileTypeMap[type]
 	}
 	//计算文件大小
 	const calFileSize = (size) =>{
@@ -100,26 +116,56 @@
 			}
 		})
 	}
+	//搜索
 	const keyword = ref('')
-	
-	const search = () => {
+	const offset = ref(0)
+	const getListSearch = async () =>{
+		const res = await searchFile({
+			query: keyword.value,
+			limit: limit.value,
+			offset: offset.value,
+			schoolCode:uni.getStorageSync('schoolCode')
+		})
+		console.log(res);
+		const formattedPosts = res.data.searchResult.map(item => item._formatted);
+		console.log(formattedPosts);
+		list.value = [...list.value,...formattedPosts];
+		if(limit.value>res.data.searchResult.length) noData.value = true
+		console.log(list.value);
+	}
+	const search = async () => {
 		console.log(keyword.value)
+		offset.value=0
+		isSearch.value = true
+		list.value=[]
+		noData.value=false
+		getListSearch()
 	}
 
 	const isRefreshing = ref(false)
+	const isSearch = ref(false)
 	const scrolltolower = async () =>{
 		if(noData.value || isRefreshing.value){
 			return
 		}
 		console.log('触底加载帖子');
-		fileId.value=list.value[list.value.length-1].fileId
-		console.log(fileId.value);
-		isRefreshing.value = true
-		const res = await getList()
-		isRefreshing.value = false
+		if(isSearch.value){
+			offset.value += limit.value;
+			isRefreshing.value = true
+			getListSearch();
+			isRefreshing.value = false
+		}else{
+			fileId.value=list.value[list.value.length-1].fileId
+			console.log(fileId.value);
+			isRefreshing.value = true
+			const res = await getList()
+			isRefreshing.value = false
+		}
 	}
    const paging = ref()
    const queryList = () =>{
+	keyword.value=''
+	isSearch.value= false
    	setTimeout(() =>{
    		noData.value = false
    			 getFileList({
@@ -150,14 +196,13 @@
 			  radius="5"
 			  v-model="keyword"
 			  placeholder="请输入关键词"
+			  bgColor="#eee"
 			  clearButton="auto"
 			  cancelButton="none"
+			  :radius="100"
 			  @confirm="search"
 			/>
 			<view class="tabs">
-				<view class="tab" :class="{ active: activeFilter === 0 }" @tap="setActiveFilter(0)">
-					<text>默认</text>
-				</view>
 				<view class="tab" :class="{ active: activeFilter === 1 }" @tap="setActiveFilter(1)">
 					<text>下载量倒序</text>
 				</view>
@@ -167,14 +212,18 @@
 			</view>
 		</template>
 		<view class="container">
-			<scroll-view scroll-y style="height: 100vh;" @scrolltolower="scrolltolower">
-				<view class="content">
-					<view v-for="(item, index) in list" :key="index" class="file-item"  @tap="openFile(item.fileUrl,item.fileId)">
+			<scroll-view scroll-y :scroll-top="scrollTop" style="height: calc(100vh);" @scroll="onScroll" @scrolltolower="scrolltolower">
+				<view v-if="list.length === 0" class="empty-state">
+				  <image mode="widthFix" src="../../static/noData.png"></image>
+				  <text class="empty-text">还没有任何数据哦</text>
+				</view>
+				<view v-else class="content">
+					<view v-for="(item, index) in list" :key="item.fileId" class="file-item"  @tap="openFile(item.fileUrl,item.fileId)">
 						<view class="left">
 							<image  :src="judgeType(item.fileName)" class="file-icon" mode="aspectFill" />
 						</view>
 					    <view class="file-info">
-					        <text class="file-name">{{ item.fileName }}</text>
+					        <rich-text space="nbsp" :nodes="item.fileName"></rich-text>
 							<view class="bottom">
 								<text class="file-size">文件大小：{{calFileSize(item.fileSize)}}</text>
 								<text class="file-Count">浏览量：{{calReadCount(item.downloadCount)}}</text>
@@ -191,6 +240,19 @@
 </template>
 
 <style lang="scss" scoped>
+	.empty-state {
+	  display: flex;
+	  flex-direction: column;
+	  align-items: center;
+	  justify-content: center;
+	  padding-top: 160rpx;
+	}
+	
+	.empty-text {
+	  font-size: 28rpx;
+	  color: #999999;
+	  margin-bottom: 48rpx;
+	}
 .container{
 	background-color: #f5f5f5;
 }
@@ -245,9 +307,11 @@
     display: flex;
     align-items: center;
 	transition: transform 0.2s ease-in-out;
+	&:active::before {
+		transform: scaleX(1);
+	}
 	&:active{
-		transform: scale(0.98);
-		border: 1px solid #333;
+		transform: scale(0.97);
 	}
     .left{
 	    height: 100%;
@@ -267,7 +331,7 @@
         display: flex;
         flex-direction: column;
 		margin-right: 30rpx;
-	    .file-name {
+	    rich-text {
 	        font-size: 30rpx;
 	        font-weight: 600;
 			color: #333;
@@ -290,7 +354,17 @@
 	    }
     }
 }
-
+.file-item::before{
+	content: '';
+	 position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 6rpx;
+	background: linear-gradient(90deg, transparent, rgba(58, 197, 89, 0.6), transparent);
+	transform: scaleX(0);
+	 transition: transform 0.3s ease;
+}
 
 
 </style>

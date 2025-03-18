@@ -564,7 +564,7 @@
 
 	.uni-easyinput__placeholder-class {
 		color: #999;
-		font-size: 12px;
+		font-size: 13px;
 		// font-weight: 200;
 	}
 

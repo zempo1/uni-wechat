@@ -104,9 +104,9 @@
 		arrPicture.value.splice(index, 1)
 		console.log(arrPicture.value);
 	}
-	const topicArr = ['拼车','休闲','学习','运动','游戏','干饭','旅行','其他']
-	const schoolArr = ['东莞理工学院','西校区','北校区','南校区']
-	const schoolCodeArr = ['11819','11820','11821','11823']
+	const topicArr = ['拼车','休闲','学习','运动','寻物','干饭','选课','其他']
+	const schoolArr = ['东莞理工学院(松山湖校区)','东莞理工学院(莞城校区)','广东医科大学(湛江校区)','广东医科大学(东莞校区)','东莞职业技术学院(松山湖校区)','东莞职业技术学院(大岭山校区)','东莞职业技术学院(道滘校区)']
+	const schoolCodeArr = ['11819B','11819A','10571A','10571B','14263A','14263B','14263C']
 	const index = ref(0)
 	const schoolIndex = ref(0)
 	const topic = ref(topicArr[0]);
@@ -155,7 +155,7 @@
 					}, 500)
 
             }).catch((err) => {
-                console.log("输入不合法:", err)
+                console.log(err)
             });
         }
     }
@@ -201,7 +201,7 @@
 			<text>#添加话题</text>
 			<view class="pick">
 				<picker @change="pickTopic" :value="index" :range="topicArr">
-					<view style="color:orangered;">
+					<view style="color:#d52c29;">
 					{{topic}}
 					<uni-icons type="arrowright" size="24" style="vertical-align: middle;"></uni-icons>
 					</view>
@@ -212,7 +212,7 @@
 			<text>校区</text>
 			<view class="pick">
 				<picker @change="pickSchool" :value="schoolIndex" :range="schoolArr">
-					<view style="color:orangered;">
+					<view style="color:#d52c29;">
 					{{school}}
 					<uni-icons type="arrowright" size="24" style="vertical-align: middle;"></uni-icons>
 					</view>
@@ -318,7 +318,7 @@
 			.pop-btn2{
 				width: 50%;
 				height: 100%;
-				color: purple;
+				color: #5cc280;
 				line-height: 110rpx;
 				font-size: 32rpx;
 			}

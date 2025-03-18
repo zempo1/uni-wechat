@@ -1,6 +1,7 @@
 <script setup>
 	import {getMarketPostDetail,delMarketPost,finishMarketPost} from '@/api/market.js'
 	import {getOtherUserInfo} from '@/api/user.js'
+	import {formatDate} from '@/common/formatTime.js'
 	const tradePostId = ref()
 	const comPost = ref([])
 	const posterId = ref()
@@ -24,28 +25,6 @@
 		posterId.value = res.data.userId
 	})
 	
-	const formatDate = (dateStr) => {
-	  const now = new Date();
-	  dateStr = dateStr.replace(" ", "T");
-	  const date = new Date(dateStr);
-	  const diff = now.getTime() - date.getTime();
-	  
-	  const minute = 60 * 1000;
-	  const hour = 60 * minute;
-	  const day = 24 * hour;
-	  
-	  if (diff < minute) {
-	    return '刚刚';
-	  } else if (diff < hour) {
-	    return `${Math.floor(diff / minute)}分钟前`;
-	  } else if (diff < day) {
-	    return `${Math.floor(diff / hour)}小时前`;
-	  } else if (diff < 7 * day) {
-	    return `${Math.floor(diff / day)}天前`;
-	  } else {
-	    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-	  }
-	};
 	const previewImage = (index) => {
 		uni.previewImage({
 			urls: comPost.value.images,
@@ -65,7 +44,8 @@
 				if (re.confirm) {
 					const res = await delMarketPost({
 						userId: uni.getStorageSync('userId'),
-						postId: tradePostId.value
+						postId: tradePostId.value,
+						schoolCode: comPost.value.schoolCode
 					})
 					console.log(res);
 					if(res.code===200){
@@ -94,7 +74,8 @@
 				if (re.confirm) {
 					const res = await finishMarketPost({
 						userId: uni.getStorageSync('userId'),
-						postId: tradePostId.value
+						postId: tradePostId.value,
+						schoolCode: comPost.value.schoolCode
 					})
 					console.log(res);
 					if(res.code===200){
@@ -190,8 +171,8 @@
 
 .content-wrap {
   background-color: #fff;
-  border-radius: 16rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+  border-radius: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 .header {
@@ -291,7 +272,7 @@
 .imageBox1{
 	padding: 0 20rpx;
     .image1{
-		// width: 100%;
+		border-radius: 10rpx;
 	}
 }
 .phone{

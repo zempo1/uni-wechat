@@ -1,15 +1,27 @@
 <script setup>
-	
+	//监听Header组件选择校区
+	const changeSchool = (schoolCode) =>{
+		console.log('communityLife',schoolCode);
+	}
+	const search = (query) =>{
+		console.log('communityLife',query);
+	}
+	const skipLick = () =>{
+		let url = 'https://mp.weixin.qq.com/s/mOcXasnbwotr4AJsW-IU-g';
+		uni.navigateTo({
+				url: '/pages/webView/webView?url=' + url
+			})
+	}
 </script>
 
 <template>
 	<view class="container">
-		<Header page="communityLife"></Header>
+		<!-- <Header page="communityLife" @changeSchool="changeSchool" @search="search"></Header> -->
 		<view class="banner">
 			<swiper indicator-dots indicator-color="rgba(255,255,255,0.5)"
 			indicator-active-color="#fff" autoplay circular>
 				<swiper-item v-for="item in 3">
-					<image src="/static/微信图片_20231020224507.jpg" mode="aspectFill"></image>
+					<image @tap="skipLick()" src="/static/微信图片_20231020224507.jpg" mode="aspectFill"></image>
 				</swiper-item>
 			</swiper>
 		</view>

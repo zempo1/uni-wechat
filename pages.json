@@ -25,10 +25,11 @@
 		},
 
 		{
-			"path" : "pages/material/material",
+			"path" : "pages/index/material/material",
 			"style" : 
 			{
 				"navigationBarTitleText" : "资料",
+				"navigationBarBackgroundColor": "#68e7a4",
 				"onReachBottomDistance": 20
 			}
 		},
@@ -54,14 +55,6 @@
 			"style" : 
 			{
 				"navigationBarTitleText" : ""
-			}
-		},
-		{
-			"path" : "pages/index/communityLife/communityLife",
-			"style" : 
-			{
-				"navigationBarTitleText" : "社团生活",
-				"navigationBarBackgroundColor": "#68e7a4"
 			}
 		},
 		{
@@ -120,6 +113,21 @@
 			{
 				"navigationBarTitleText" : ""
 			}
+		},
+		{
+			"path" : "pages/message/message",
+			"style" : 
+			{
+				"navigationBarTitleText" : "消息",
+				"navigationBarBackgroundColor": "#6ef4ad"
+			}
+		},
+		{
+			"path" : "pages/chat/chat",
+			"style" : 
+			{
+				"navigationBarTitleText" : ""
+			}
 		}
 	],
 	"globalStyle": {
@@ -150,10 +158,10 @@
 				"text":"发布"
 			},
 			{
-				"pagePath": "pages/material/material",
+				"pagePath": "pages/message/message",
 				"iconPath": "/static/tabBar/material.png",
 				"selectedIconPath": "/static/tabBar/material-h.png",
-				"text":"资料"
+				"text":"消息"
 			},
 			{
 				"pagePath": "pages/my/my",

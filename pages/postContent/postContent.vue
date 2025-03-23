@@ -1,6 +1,7 @@
 <script setup>
 import { nextTick, onMounted,getCurrentInstance } from 'vue';
 import {onShareAppMessage} from '@dcloudio/uni-app'
+import {getOtherUserInfo} from '@/api/user.js'
 import {apiPostDetail,apiPostCommentList,apiPostCollect,apiPostLike,apiPostComment,apiCommentLike,apiPostCommentChildList,apiCommentReply,apiCommentDelete} from '../../api/post.js'
 import {baseUrl} from '../../utils/request.js'
 import {deleteFile} from '@/api/file.js'
@@ -45,6 +46,13 @@ import {formatTimestamp,formatDate} from '@/common/formatTime.js'
 		})
 		console.log(res);
 		post.value = res.data;
+		//获取发帖者头像
+		const res2 = await getOtherUserInfo({
+			userId: uni.getStorageSync('userId'),
+			targetId: res.data.userId
+		})
+		console.log(res2);
+		userAvatar.value = res2.data.avatarUrl
 	}
 	//查询帖子评论
 	const noData = ref(false)

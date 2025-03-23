@@ -1,7 +1,14 @@
 <script setup>
 import {getMarketPost,searchMarketPost} from '../../api/market.js'
+import {getOtherUserInfo} from '@/api/user.js'
+const hasUnreadMessage = ref(0)
+
 onLoad(async ()=>{
 	getPostList()
+})
+onShow(()=>{
+	hasUnreadMessage.value = uni.getStorageSync('marketUnRead')
+	console.log(hasUnreadMessage.value);
 })
 const postId = ref('')
 const limit = ref(6)
@@ -56,36 +63,47 @@ const search = async (value) =>{
 	noData.value=false
 	getPostSearch()
 }
-// const onlyMyschool = ref(false)
-// const change = (e) =>{
-// 	console.log(e);
-// 	if(e.detail.value[0]==='1'){
-// 		schoolCode.value = uni.getStorageSync('schoolCode')
-// 		onlyMyschool.value = true
-// 	}else{
-// 		schoolCode.value = ''
-// 		onlyMyschool.value = false
-// 	}
-// 	 // 触发清空搜索，并通知 Header 更新校区
-// 	  resetSearch();
-// 	  changeSchool(schoolCode.value)
-// }
+
 // 设置激活的筛选条件
-const setActiveFilter = (item,index) => {
+const messageList = ref([])
+const setActiveFilter =  (item,index) => {
 	activeFilter.value = item;
-	resetSearch();
-	index-=1;
-	console.log(item);
-	console.log(index);
-	if(index!==-1){
-		typeIndex.value = index
-	}else{
-		typeIndex.value = ''
+	if(item==='我的消息'){
+		//遍历缓存的marketMessage
+		messageList.value=[]
+		if(uni.getStorageSync('marketMessage')){
+			uni.getStorageSync('marketMessage').forEach( async(message) => {
+				console.log(message);
+				const res = await getOtherUserInfo({
+					userId: uni.getStorageSync('userId'),
+					targetId: message.userId
+				})
+				console.log(res);
+				//将res.data存入messageList的同时并加入一个content字段也存入messageList，content:message.content
+				messageList.value.push({
+						...res.data,
+						content:message.content,
+						isRead: message.isRead
+					})
+				console.log(messageList.value);
+			})
+		}
 	}
-	postId.value = ''
-	comPost.value = []
-	noData.value = false
-	getPostList()
+	else{
+		resetSearch();
+		index-=1;
+		console.log(item);
+		console.log(index);
+		if(index!==-1){
+			typeIndex.value = index
+		}else{
+			typeIndex.value = ''
+		}
+		postId.value = ''
+		comPost.value = []
+		noData.value = false
+		getPostList()
+	}
 }
 const goToPublish = () => {
 	uni.redirectTo({
@@ -144,21 +162,23 @@ const queryList = () =>{
 }
 const isSearch = ref(false)//用于判断是否是搜索完的触底加载
 const scrolltolower = async () =>{
-	if(noData.value || isRefreshing.value){
-		return
-	}
-	console.log('触底加载帖子');
-	if(isSearch.value){ //搜索完的触底加载
-		offset.value += limit.value;
-		isRefreshing.value = true
-		getPostSearch();
-		isRefreshing.value = false
-	}else{
-		postId.value=comPost.value[comPost.value.length-1].tradePostId
-		console.log(postId.value);
-		isRefreshing.value = true
-		const res = await getPostList()
-		isRefreshing.value = false
+	if(activeFilter.value!=='我的消息'){
+		if(noData.value || isRefreshing.value){
+			return
+		}
+		console.log('触底加载帖子');
+		if(isSearch.value){ //搜索完的触底加载
+			offset.value += limit.value;
+			isRefreshing.value = true
+			getPostSearch();
+			isRefreshing.value = false
+		}else{
+			postId.value=comPost.value[comPost.value.length-1].tradePostId
+			console.log(postId.value);
+			isRefreshing.value = true
+			const res = await getPostList()
+			isRefreshing.value = false
+		}
 	}
 	
 }
@@ -168,7 +188,32 @@ const gotoMarketContent = (tradePostId) =>{
 		url:'/pages/market/marketContent/marketContent?tradePostId='+tradePostId
 	})
 }
-
+const gotoChat = (item) =>{
+	console.log(item);
+	// 更新消息已读状态
+	let marketMessage = uni.getStorageSync('marketMessage') || [];
+	marketMessage = marketMessage.map(msg => {
+		if (msg.userId === item.userId) {
+			msg.isRead = 1;
+		}
+		return msg;
+	});
+	// 检查是否所有消息都已读
+	const hasUnread = marketMessage.some(msg => msg.isRead === 0);
+	uni.setStorageSync('marketUnRead', hasUnread ? 1 : 0);
+	uni.setStorageSync('marketMessage', marketMessage);
+	// 更新当前显示的消息列表
+	messageList.value = messageList.value.map(msg => {
+		if (msg.userId === item.userId) {
+			msg.isRead = 1;
+		}
+		return msg;
+	});
+	// 跳转到聊天页面
+	uni.navigateTo({
+		url:'/pages/chat/chat?otherId='+item.userId+'&otherUserName='+item.userName+'&otherAvatar='+item.avatarUrl
+	})
+}
 </script>
 
 <template>
@@ -180,54 +225,66 @@ const gotoMarketContent = (tradePostId) =>{
 		    <Header page="market" :clear="isClear"  @changeSchool="changeSchool" @search="search"></Header>
 		    <view class="filter-bar">
 		    	<view
-		    	    v-for="(item, index) in ['全部', '出售', '求购', '免费赠送']"
+		    	    v-for="(item, index) in ['全部', '出售', '求购', '免费赠送','我的消息']"
 		    	    :key="index"
 		    	    class="filter-item"
-		    		:class="{active : activeFilter === item}"
+		    		:class="{active : activeFilter === item, 'has-message': item === '我的消息' && hasUnreadMessage}"
 		    	    @tap="setActiveFilter(item,index)"
 		    	>
 		    	  <text>{{item}}</text>
 		    	</view>
-		    	<!-- <view class="filter-bar-right">
-					<checkbox-group @change="change">
-						<checkbox :value="1" style="transform:scale(0.7);"></checkbox>
-						<text>只看本校</text>
-					</checkbox-group>
-		    	</view> -->
 		    </view>
 		</template>
 		<scroll-view scroll-y style="height: 90vh;" @scrolltolower="scrolltolower">
-			<view v-if="comPost.length === 0" class="empty-state">
-			  <image mode="widthFix" src="../../static/noData.png"></image>
-			  <text class="empty-text">还没有任何数据哦</text>
-			  <button v-if="schoolCode===mySchoolCode" class="floating-button" @click="goToPublish"><img class="issue" src="../../static/issue.png" />我要发布</button>
+			<view v-if="activeFilter!=='我的消息'">
+				<view v-if="comPost.length === 0" class="empty-state">
+				  <image mode="widthFix" src="../../static/noData.png"></image>
+				  <text class="empty-text">还没有任何数据哦</text>
+				  <button v-if="schoolCode===mySchoolCode" class="floating-button" @click="goToPublish"><img class="issue" src="../../static/issue.png" />我要发布</button>
+				</view>
+				<view v-else class="container">
+					<view class="Index">
+					    <!-- 瀑布流布局列表 -->
+					    <view class="pubuBox">
+					      <view class="pubuItem">
+					        <view class="item-masonry" v-for="(item, index) in comPost" :key="index" @tap="gotoMarketContent(item.tradePostId)">
+					          <image style="height: 450rpx;" v-if="item.image && item.image!=='null'" :src="item.image" mode="aspectFill"></image>
+							  <view v-else class="noimg">
+								  <rich-text space="nbsp" :nodes="item.content"></rich-text>
+							  </view>
+					          <view class="listtitle">
+					            <!-- 这是没有高度的父盒子（下半部分） -->
+					            <view class="listtitle1">
+									<rich-text space="nbsp" :nodes="item.content"></rich-text>
+								</view>
+					            <view class="listtitle2">
+					              <text class="listtitle2son">￥{{ calPrice(item.price) }}</text>
+								  <view class="buy">{{types[item.type]}}</view>
+					            </view>
+					          </view>
+					        </view>
+					      </view>
+					    </view>
+					  </view>
+					 <!-- 悬浮发布按钮 -->
+					<button v-if="schoolCode===mySchoolCode" class="floating-button" @click="goToPublish"><img class="issue" src="../../static/issue.png" />我要发布</button>
+				</view>
 			</view>
-			<view v-else class="container">
-				<view class="Index">
-				    <!-- 瀑布流布局列表 -->
-				    <view class="pubuBox">
-				      <view class="pubuItem">
-				        <view class="item-masonry" v-for="(item, index) in comPost" :key="index" @tap="gotoMarketContent(item.tradePostId)">
-				          <image style="height: 450rpx;" v-if="item.image && item.image!=='null'" :src="item.image" mode="aspectFill"></image>
-						  <view v-else class="noimg">
-							  <rich-text space="nbsp" :nodes="item.content"></rich-text>
-						  </view>
-				          <view class="listtitle">
-				            <!-- 这是没有高度的父盒子（下半部分） -->
-				            <view class="listtitle1">
-								<rich-text space="nbsp" :nodes="item.content"></rich-text>
-							</view>
-				            <view class="listtitle2">
-				              <text class="listtitle2son">￥{{ calPrice(item.price) }}</text>
-							  <view class="buy">{{types[item.type]}}</view>
-				            </view>
-				          </view>
-				        </view>
-				      </view>
-				    </view>
-				  </view>
-				 <!-- 悬浮发布按钮 -->
-				<button v-if="schoolCode===mySchoolCode" class="floating-button" @click="goToPublish"><img class="issue" src="../../static/issue.png" />我要发布</button>
+			<!-- 我的消息 -->
+			<view v-else class="message-container">
+				<view v-if="messageList.length === 0" class="empty-state">
+					<image mode="widthFix" src="../../static/noData.png"></image>
+					<text class="empty-text">还没有任何消息哦</text>
+				</view>
+				<view v-else class="message-list">
+					<view v-for="(item, index) in messageList" :key="index" class="message-item" :class="{'unread': item.isRead === 0}" @tap="gotoChat(item)">
+						<image class="avatar" :src="item.avatarUrl || '../../static/avatar0.png'" mode="aspectFill"></image>
+						<view class="message-content">
+							<text class="username">{{item.userName}}</text>
+							<text class="content">{{item.content}}</text>
+						</view>
+					</view>
+				</view>
 			</view>
 		</scroll-view>
 	</z-paging>
@@ -272,11 +329,23 @@ const gotoMarketContent = (tradePostId) =>{
 	   padding-bottom: 10rpx;
 	   color: #222;
 	   transition: all 0.1s ease-in-out;
+	   position: relative;
 	}
-	// .filter-bar-right {
-	//     margin-left: auto;
-	//     padding: 0 27rpx;
-	// }
+	.filter-item:last-child::after {
+	   content: '';
+	   position: absolute;
+	   top: -5rpx;
+	   right: 10rpx;
+	   width: 16rpx;
+	   height: 16rpx;
+	   background-color: #ff0000;
+	   border-radius: 50%;
+	   display: none;
+	}
+	.filter-item:last-child.has-message::after {
+	   display: block;
+	}
+
 	.filter-item.active {
 	  border-bottom: 2px solid rgb(11, 203, 136);
 	  color: rgb(11, 203, 136);
@@ -409,5 +478,73 @@ const gotoMarketContent = (tradePostId) =>{
 	.Index {
 	  width: 100%;
 	  height: 100%;
+	}
+	
+	/* 消息列表样式 */
+	.message-container {
+		padding: 20rpx;
+		background-color: #f6f7fb;
+		min-height: 100vh;
+	}
+	
+	.message-list {
+		background-color: #fff;
+		border-radius: 20rpx;
+		overflow: hidden;
+	}
+	
+	.message-item {
+		display: flex;
+		padding: 30rpx;
+		border-bottom: 1px solid #dedede;
+		transition: all 0.3s ease;
+		position: relative;
+		
+		&:active {
+			background-color: #f9f9f9;
+			transform: scale(0.98);
+		}
+		
+		&:last-child {
+			border-bottom: none;
+		}
+		
+		&.unread::after {
+			content: '';
+			position: absolute;
+			top: 15rpx;
+			right: 15rpx;
+			width: 16rpx;
+			height: 16rpx;
+			background-color: #ff0000;
+			border-radius: 50%;
+		}
+	}
+	
+	.avatar {
+		width: 80rpx;
+		height: 80rpx;
+		border-radius: 50%;
+		margin-right: 20rpx;
+		background-color: #f0f0f0;
+	}
+	
+	.message-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		gap: 10rpx;
+	}
+	
+	.username {
+		font-size: 28rpx;
+		font-weight: 500;
+		color: #50a86f;
+	}
+	
+	.content {
+		font-size: 26rpx;
+		color: #666;
+		line-height: 1.5;
 	}
 </style>

@@ -213,7 +213,12 @@ const loginOut = () => {
 	      	      title: '退出成功',
 	      	      icon: 'success'
 	      	    })
-	      	    uni.clearStorageSync()
+				uni.removeStorageSync('accessToken')
+				uni.removeStorageSync('refreshToken')
+				uni.removeStorageSync('userId')
+				uni.removeStorageSync('userName')
+				uni.removeStorageSync('avatar')
+				uni.removeStorageSync('schoolCode')
 	      	    user.value.avatar = ''
 	      	    user.value.nickname = ''
 	        }

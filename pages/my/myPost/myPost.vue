@@ -246,7 +246,8 @@ const popClose = () =>{
   
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
+@import "@/common/empty.css";
 page {
   height: 100%;
 }
@@ -403,26 +404,6 @@ page {
 // .stat-text.liked {
 //   color: #FF6B6B;
 // }
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding-top: 160rpx;
-}
-
-.empty-image {
-  width: 320rpx;
-  height: 320rpx;
-  margin-bottom: 32rpx;
-}
-
-.empty-text {
-  font-size: 28rpx;
-  color: #999999;
-  margin-bottom: 48rpx;
-}
 
 .loading-state {
   padding: 32rpx 0;

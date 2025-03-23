@@ -10,9 +10,9 @@ onLoad(()=>{
 	console.log('刷新');
 })
 
-const gotoCommunityLife = () => {
+const gotomaterial = () => {
     uni.navigateTo({
-        url: '/pages/index/communityLife/communityLife'
+        url: '/pages/index/material/material'
     });
 };
 const gotoPostBar = () => {
@@ -422,7 +422,7 @@ const schoolList = ref([
 	   	  <scroll-view scroll-y :scroll-top="scrollTop" style="height: calc(100vh);" @scroll="onScroll" @scrolltolower="scrolltolower">
 	   	        <view class="header">
 	   	            <view class="btn" @tap="gotoPostBar()">帖吧</view>
-	   	            <view class="btn" @tap="gotoCommunityLife()">社团生活</view>
+	   	            <view class="btn" @tap="gotomaterial()">资料</view>
 	   	        </view>
 	   	        <!-- 固定的 top 区域 -->
 	   	        <view class="top" :class="{ fixed: fixedTop }">

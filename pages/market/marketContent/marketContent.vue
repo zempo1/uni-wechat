@@ -31,6 +31,12 @@
 			current: index
 		})
 	}
+	//联系卖家
+	const gotoChat = () =>{
+		uni.navigateTo({
+			url:'/pages/chat/chat?otherId='+comPost.value.userId+'&otherUserName='+comPost.value.userName+'&otherAvatar='+comPost.value.userAvatar
+		})
+	}
 	//点击菜单
 	const popup = ref()
 	const openDel = () =>{
@@ -142,7 +148,11 @@
 			</view>
 			<view class="phone">
 				<text>联系方式:{{comPost.contact}}</text>
+				<view v-if="comPost.userId!==userId">
+					 <button class="contact-btn" @tap="gotoChat()">立即联系</button>
+				</view>
 			</view>
+			
 		</view>
 	</view>
 	<uni-popup ref="popup" type="bottom" border-radius="8rpx 8rpx 0 0"  >
@@ -277,7 +287,8 @@
 }
 .phone{
 	display: flex;
-	justify-content: center;
+	justify-content: space-between;
+	align-items: center;
 	padding: 20rpx;
 	margin-top: 30rpx;
 	text{
@@ -308,5 +319,15 @@
 			font-size: 34rpx;
 		}
 	}
+}
+.contact-btn {
+  background: linear-gradient(to right, #4caf50, #45a049);
+  color: #fff;
+  font-size: 28rpx;
+  padding: 0 60rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 40rpx;
+  margin: 0;
 }
 </style>

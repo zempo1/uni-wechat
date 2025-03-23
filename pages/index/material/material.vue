@@ -50,9 +50,9 @@
 	
 	//判断文件类型
 	const fileTypeMap = {
-		pdf: '../../static/pdf.png',
-		doc: '../../static/word.png',
-		docx: '../../static/word.png',
+		pdf: '../../../static/pdf.png',
+		doc: '../../../static/word.png',
+		docx: '../../../static/word.png',
 	};
 	const judgeType = (fileName) => {
 		const type = fileName.split('.')[1]
@@ -214,7 +214,7 @@
 		<view class="container">
 			<scroll-view scroll-y :scroll-top="scrollTop" style="height: calc(100vh);" @scroll="onScroll" @scrolltolower="scrolltolower">
 				<view v-if="list.length === 0" class="empty-state">
-				  <image mode="widthFix" src="../../static/noData.png"></image>
+				  <image mode="widthFix" src="../../../static/noData.png"></image>
 				  <text class="empty-text">还没有任何数据哦</text>
 				</view>
 				<view v-else class="content">
@@ -240,19 +240,7 @@
 </template>
 
 <style lang="scss" scoped>
-	.empty-state {
-	  display: flex;
-	  flex-direction: column;
-	  align-items: center;
-	  justify-content: center;
-	  padding-top: 160rpx;
-	}
-	
-	.empty-text {
-	  font-size: 28rpx;
-	  color: #999999;
-	  margin-bottom: 48rpx;
-	}
+@import "@/common/empty.css";
 .container{
 	background-color: #f5f5f5;
 }

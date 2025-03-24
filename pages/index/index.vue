@@ -318,6 +318,16 @@ const spikLink = (url) =>{
 }
 const creditList = ref([
 	{
+		title:'读书沙龙来了，还有6h+志愿时长',
+		time:'2025年3月23日',
+		url:'https://mp.weixin.qq.com/s/G2Ja2bj2Zr42TCHqqbWIAA'
+	},
+	{
+		title:'500个名额+0.2课外学分，还有很多兴趣课堂+知行学分',
+		time:'2025年3月18日',
+		url:'https://mp.weixin.qq.com/s/VuFIzw-MrkwQ7tVPerX9wg'
+	},
+	{
 		title:'0.5知行分＋0.3课外学分＋6h志愿时长！',
 		time:'2025年3月17日',
 		url:'https://mp.weixin.qq.com/s/5kE4aCpQbeNr-qVC7dWMgQ'

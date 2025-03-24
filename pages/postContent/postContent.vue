@@ -411,6 +411,8 @@ const clickCommentHeart = async (item,type) =>{
 		}
 		console.log(item);
 		replayTo.value = item.commentId //点击子评论回复子评论
+		uni.setStorageSync('replayTo',replayTo.value)
+		console.log('replayTo',replayTo.value);
 		placeholder.value = `回复${item.userName}`
 		nextTick(() =>{
 			isFocus.value = true
@@ -419,6 +421,7 @@ const clickCommentHeart = async (item,type) =>{
 	}
 	//子评论输入框失去焦点
 	const blur = () =>{
+		console.log('失去焦点');
 		placeholder.value='发布一条友善的评论'
 		replayTo.value = commentCopy.value.commentId //变为回复楼主的评论
 		isFocus.value = false
@@ -427,7 +430,15 @@ const clickCommentHeart = async (item,type) =>{
 	//查看子评论点击发送评论
 	const sendReply = async () =>{
 		console.log(commentCopy.value.commentId);
+		replayTo.value = uni.getStorageSync('replayTo')
 		console.log(replayTo.value);
+		if(!replyContent.value){
+			uni.showToast({
+				title: '评论内容不能为空',
+				icon: 'none'
+			})
+			return
+		}
 		const currentTime = new Date().getTime();
 		const commentTime = formatTimestamp(currentTime);
 		const res = await apiCommentReply({
@@ -439,6 +450,10 @@ const clickCommentHeart = async (item,type) =>{
 			commentTime:commentTime
 		})
 		console.log(res);
+		uni.removeStorageSync('replayTo')
+		placeholder.value='发布一条友善的评论'
+		replayTo.value = commentCopy.value.commentId //变为回复楼主的评论
+		isFocus.value = false
 		//同步更新数据
 		const commentIndex = comments.value.findIndex(item => item.commentId === commentCopy.value.commentId);
 		if (commentIndex !== -1) {
@@ -454,6 +469,7 @@ const clickCommentHeart = async (item,type) =>{
 			title: '发布成功',
 			icon: 'none'
 		})
+	
 	}
 	//查看评论图片
 	const previewCommentImage = (image) =>{

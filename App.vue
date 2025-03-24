@@ -20,9 +20,9 @@
 	  });
 	  
 	  //链接异常
-	  ws.onError((e) => {
-	    console.log("出现错误",e);
-	    // reconnect(); //重连
+	  ws.onError(() => {
+	    console.log("出现错误");
+	    reconnect(); //重连
 	  });
 	  
 	  //链接断开
@@ -32,7 +32,7 @@
 	    if (closeType == 0) {
 	      return;
 	    }
-	    // reconnect(); //重连
+	    reconnect(); //重连
 	  });
 	  
 	  //后台返回消息
@@ -123,11 +123,14 @@
 			uni.setStorageSync('isRead',0)
 			getCommentList();
 			setInterval(()=>{
-				// getCommentList();
+				getCommentList();
 			},3000)
 		},
 		onShow: function() {
 			console.log('App Show')
+			// 先解绑之前的监听器
+			uni.$off('onWebSocketMessage');
+			// 重新绑定监听器
 			uni.$on('onWebSocketMessage', (data) => {
 			  console.log('收到消息:', data);
 			  if (data.userId) {
@@ -151,6 +154,8 @@
 		},
 		onHide: function() {
 			console.log('App Hide')
+			// 页面隐藏时解绑监听器
+			uni.$off('onWebSocketMessage');
 		}
 	}
 </script>

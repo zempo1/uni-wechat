@@ -1,4 +1,4 @@
-const baseUrl = 'https://8.134.200.160:20611';
+const baseUrl = 'http://8.134.200.160:80';
 // const baseUrl = 'http://6gk5ef.natappfree.cc'
 export function request(config = {}) {
   let { url, data = {}, method = 'GET', header = {} } = config;

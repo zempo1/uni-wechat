@@ -15,11 +15,11 @@
 				:scroll-top="scrollTop"
 				:scroll-with-animation="enableAnimation">
 				<!-- <view class="timer">2022-08-02 11:08:07</view> -->
-				<view :class="item.userId === otherUserInfo.otherId ? 'userbox2' : 'userbox'" v-for="(item, index) in chatList"
+				<view :class="item.toUserId !== otherUserInfo.otherId ? 'userbox2' : 'userbox'" v-for="(item, index) in chatList"
 					:key="item.messageId" :id='"item"+index'>
-					<view :class="item.userId === otherUserInfo.otherId ? 'nameInfo2' : 'nameInfo'">
+					<view :class="item.toUserId !== otherUserInfo.otherId ? 'nameInfo2' : 'nameInfo'">
 						<view style="font-size: 28rpx">{{ item.userId === otherUserInfo.otherId ?otherUserInfo.otherUserName:userName  }}</view>
-						<view :class="item.userId === otherUserInfo.otherId  ? 'contentText2' : 'contentText'">
+						<view :class="item.toUserId !== otherUserInfo.otherId  ? 'contentText2' : 'contentText'">
 							{{ item.content }}
 						</view>
 					</view>
@@ -29,7 +29,7 @@
 				</view>
 			</scroll-view>
 			<view class="bottom">
-				<textarea name="输入框" id="1" cols="20" rows="5" class="areaBox" v-model="inputValue"></textarea>
+				<textarea :cursor-spacing="110" name="输入框" id="1" cols="20" rows="5" class="areaBox" v-model="inputValue"></textarea>
 				<button 
 					@click="sendOut">发送</button>
 			</view>
@@ -76,8 +76,8 @@ onShow(() => {
 
 // 页面卸载前执行
 onBeforeUnmount(() => {
-  // 移除WebSocket消息监听
-  uni.$off('onWebSocketMessage');
+  // 不再移除全局WebSocket消息监听
+  console.log('页面卸载');
 });
 
 // 页面加载时执行
@@ -171,6 +171,7 @@ const sendOut = () => {
   console.log(inputValue.value);
   // 使用全局WebSocket实例发送消息
   ws.value.send({
+	userId: uni.getStorageSync('userId'),
     toUserId: otherUserInfo.value.otherId,
     type: 'text',
     content: inputValue.value

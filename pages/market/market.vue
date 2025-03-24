@@ -1,6 +1,7 @@
 <script setup>
 import {getMarketPost,searchMarketPost} from '../../api/market.js'
 import {getOtherUserInfo} from '@/api/user.js'
+import {apiPostChat} from '@/api/message.js'
 const hasUnreadMessage = ref(0)
 
 onLoad(async ()=>{
@@ -8,7 +9,7 @@ onLoad(async ()=>{
 })
 onShow(()=>{
 	hasUnreadMessage.value = uni.getStorageSync('marketUnRead')
-	console.log(hasUnreadMessage.value);
+	console.log('消息状态',hasUnreadMessage.value);
 })
 const postId = ref('')
 const limit = ref(6)
@@ -48,6 +49,10 @@ const getPostSearch = async () =>{
 	// 提取 searchResult 数组中的 _formatted
 	const formattedPosts = res.data.searchResult.map(item => item._formatted);
 	console.log(formattedPosts);
+	formattedPosts.forEach(item=>{
+		item.tradePostId=item.postId
+		delete item.postId
+	})
 	comPost.value = [...comPost.value,...formattedPosts];
 	if(limit.value>res.data.searchResult.length) noData.value = true
 	console.log(comPost.value);
@@ -79,6 +84,14 @@ const setActiveFilter =  (item,index) => {
 					targetId: message.userId
 				})
 				console.log(res);
+				// searchMessage()
+				// const res2 = await apiPostChat({
+				//     userId: uni.getStorageSync('userId'),
+				//     otherId:  message.userId,
+				//     messageId:'' ,
+				//     limit: 1
+				// })
+				// console.log('历史记录:', res2);
 				//将res.data存入messageList的同时并加入一个content字段也存入messageList，content:message.content
 				messageList.value.push({
 						...res.data,

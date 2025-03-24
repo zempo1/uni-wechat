@@ -17,14 +17,6 @@
 			}
 		},
 		{
-			"path" : "pages/pinia/pinia",
-			"style" : 
-			{
-				"navigationBarTitleText" : "pinia"
-			}
-		},
-
-		{
 			"path" : "pages/index/material/material",
 			"style" : 
 			{

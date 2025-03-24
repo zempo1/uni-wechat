@@ -46,6 +46,11 @@ const getPostSearch = async () =>{
 	// 提取 searchResult 数组中的 _formatted
 	const formattedPosts = res.data.searchResult.map(item => item._formatted);
 	console.log(formattedPosts);
+	//将formattedPosts中的postId字段改成discussPostId,值不变
+	formattedPosts.forEach(item => {
+		item.discussPostId = item.postId
+		delete item.postId
+	});
 	post.value = [...post.value,...formattedPosts];
 	if(limit.value>res.data.searchResult.length) noData.value = true
 	console.log(post.value);

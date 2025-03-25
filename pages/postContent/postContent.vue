@@ -349,7 +349,7 @@ const clickCommentHeart = async (item,type) =>{
 			rootId:item.commentId,
 			commentId: childCommentId.value,
 			limit: childCommentLimit.value,
-			sortType: 1
+			sortType: 0
 		})
 		console.log(res);
 		if(limit.value>res.data.length) noDataChild.value = true
@@ -430,7 +430,9 @@ const clickCommentHeart = async (item,type) =>{
 	//查看子评论点击发送评论
 	const sendReply = async () =>{
 		console.log(commentCopy.value.commentId);
-		replayTo.value = uni.getStorageSync('replayTo')
+		if(uni.getStorageSync('replayTo')){
+			replayTo.value = uni.getStorageSync('replayTo')
+		}
 		console.log(replayTo.value);
 		if(!replyContent.value){
 			uni.showToast({

@@ -508,7 +508,7 @@ const schoolList = ref([
 									</uni-icons>
 					    	    </view>
 					            <view class="chat">
-					                <uni-icons type="chat" size="50rpx"  @tap="gotoPostContent(item.discussPostId,item.userAvatar,item.userName)">
+					                <uni-icons type="chat" size="50rpx">
 					    	    		<text style="font-size: 26rpx;">{{item.commentCount}}</text>
 					    	    	</uni-icons>
 					            </view>
@@ -523,7 +523,7 @@ const schoolList = ref([
 					        </view>
 					    </view>
 					    <!-- 评论区域 -->
-					    <view class="comments" v-if="item.comments.length>0" @tap="gotoPostContent(item.discussPostId,item.userAvatar,item.userName)">
+					    <view class="comments" v-if="item.comments.length>0" >
 					        <view v-for="(comment, index) in item.comments" :key="index">
 					            <text class="comment-user">{{ comment.userName }}：</text>
 					            <text class="comment-text">{{ comment.content }}</text>

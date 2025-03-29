@@ -9,7 +9,7 @@ import {formatTimestamp,formatDate} from '@/common/formatTime.js'
     const postId = ref()
 	const userAvatar = ref()
 	const userName = ref()
-	
+	const schoolCode = ref()
 	onLoad(async (option)=>{
 		postId.value = option.postId
 		userAvatar.value = option.userAvatar
@@ -46,6 +46,7 @@ import {formatTimestamp,formatDate} from '@/common/formatTime.js'
 		})
 		console.log(res);
 		post.value = res.data;
+		schoolCode.value = res.data.schoolCode
 		//获取发帖者头像
 		const res2 = await getOtherUserInfo({
 			userId: uni.getStorageSync('userId'),
@@ -514,7 +515,8 @@ const clickCommentHeart = async (item,type) =>{
 							const res = await apiCommentDelete({
 								userId:uni.getStorageSync('userId'),
 								commentId:delCommentId.value,
-								postId:postId.value
+								postId:postId.value,
+								schoolCode:schoolCode.value
 							})
 							console.log(res);
 							//同步更新数据
@@ -528,7 +530,8 @@ const clickCommentHeart = async (item,type) =>{
 								userId:uni.getStorageSync('userId'),
 								commentId:delCommentId.value,
 								postId:postId.value,
-								rootId:commentCopy.value.commentId
+								rootId:commentCopy.value.commentId,
+								schoolCode:schoolCode.value
 							})
 							console.log(res);
 							//同步更新数据

@@ -309,6 +309,11 @@ const onTop = () =>{
 	    }, 600);
 	  }, 100);
 }
+const gotoAi = () =>{
+	uni.navigateTo({
+		url:'/pages/ai/ai'
+	})
+}
 
 //学分汇总
 const spikLink = (url) =>{
@@ -581,6 +586,9 @@ const schoolList = ref([
 				<view class="float" @tap="onTop()" :style="{ opacity: showTopButton ? 1 : 0 }">
 					<view class="item"><image class="huojian" src="../../static/火箭.png" :class="{ launching: isLaunching }"></image></view>
 				</view>
+				<view class="aiBox" @tap="gotoAi()">
+					<view class="ai">AI</view>
+				</view>
 	   	    </scroll-view>
 			
 	   </view>
@@ -598,10 +606,32 @@ const schoolList = ref([
     background-color: #f5f5f5;
     height: 100%;
 	font-size: 28rpx;
+	.aiBox{
+		position: fixed;
+		right: 0;
+		bottom: 140rpx;
+		.ai{
+			width: 80rpx;
+			height: 128rpx;
+			background: linear-gradient(to right, #15ea71, 35%,#68cbdf);
+			opacity: 0.9;
+			border-radius: 80rpx 0 0 80rpx;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			color: #fff;
+			font-size: 34rpx;
+			box-shadow: -2rpx 0 10rpx rgba(0, 0, 0, 0.2);
+			transition: all 0.3s ease;
+			&:active {
+				transform: scale(0.95);
+			}
+		}
+	}
    .float{
 	   position: fixed;
 	   right: 30rpx;
-	   bottom: 50rpx;
+	   bottom: 20rpx;
 	    transition: opacity 0.4s ease-in-out;
 	   .item{
 		    width: 105rpx;

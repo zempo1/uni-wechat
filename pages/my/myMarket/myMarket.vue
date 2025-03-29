@@ -277,7 +277,7 @@ page {
 }
 
 .header-title {
-  font-size: 18px;
+  font-size: 36rpx;
   font-weight: 600;
   color: #fff;
 }

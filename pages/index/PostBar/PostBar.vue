@@ -107,16 +107,26 @@ const getPostList = async()=>{
 }
 // 定义按钮对应的颜色
 const buttonColors = {
-  '全部': '#68e7a4',
-  '拼车': 'linear-gradient(to top,#FF4081,#ffc0ab)',
-  '拼单': 'linear-gradient(to top,#FF9800,#ffdc8c)',
-  '休闲': 'linear-gradient(to top,#2196F3,#99d4fb)',
-  '学习': 'linear-gradient(to top,#9C27B0,#e7aeff)',
-  '运动': 'linear-gradient(to top,#07cb73,#0aff91)',
-  '寻物': 'linear-gradient(to top,#8BC34A,#b9f55d)',
-  '干饭': 'linear-gradient(to top,#dfc833,#e9ff86)',
-  '选课': 'linear-gradient(to top,#FF5722,#ffb870)',
-  '其他': 'linear-gradient(to top,#9E9E9E,#c6c6c6)',
+  // '全部': '#68e7a4',
+  // '拼车': 'linear-gradient(to top,#FF4081,#ffc0ab)',
+  // '拼单': 'linear-gradient(to top,#FF9800,#ffdc8c)',
+  // '休闲': 'linear-gradient(to top,#2196F3,#99d4fb)',
+  // '学习': 'linear-gradient(to top,#9C27B0,#e7aeff)',
+  // '运动': 'linear-gradient(to top,#07cb73,#0aff91)',
+  // '寻物': 'linear-gradient(to top,#8BC34A,#b9f55d)',
+  // '干饭': 'linear-gradient(to top,#dfc833,#e9ff86)',
+  // '选课': 'linear-gradient(to top,#FF5722,#ffb870)',
+  // '其他': 'linear-gradient(to top,#9E9E9E,#c6c6c6)',
+  '全部': '#5CC280',
+  '拼车': '#5CC280',
+  '拼单': '#5A81FF',
+  '休闲': '#BC8EFF',
+  '学习': '#46CCFF',
+  '运动': '#F8AE63',
+  '寻物': '#F9746A',
+  '干饭': '#E8C115',
+  '选课': '#FF8EE1',
+  '其他': '#959595',
 };
 
 

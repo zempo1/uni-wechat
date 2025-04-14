@@ -1,7 +1,8 @@
 <script>
 	import {apiPostNotice} from '@/api/message.js'
 	// WebSocket全局连接实例和配置
-	const path = "wss://8.134.200.160:21611/ws?code="
+	// const path = "wss://8.134.200.160:21611/ws?code="
+	const path = "wss://aseubel.xyz:21611/ws?code="
 	let ws = null
 	let timeoutnum = null
 	let closeType = 1

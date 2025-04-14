@@ -85,9 +85,11 @@
 				title:'加载中'
 			})
 		uni.downloadFile({
+			// url:'https://aseubel.xyz/api/v1/file/download?filePath=' + fileUrl,
 			url:fileUrl,
 			success: (res) => {
 				const filePath = res.tempFilePath
+				console.log(res);
 				uni.openDocument({
 					filePath: filePath,
 					showMenu: true,

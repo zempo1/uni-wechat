@@ -3,6 +3,7 @@ import { ref, onMounted, nextTick } from 'vue';
 import {apigetPostList,apiPostLike,apiPostCollect} from '../../api/post.js'
 import { login } from '../../api/user.js';
 import { formatTimestamp,formatDate } from '@/common/formatTime.js';
+
 onLoad(()=>{
 	userId.value = uni.getStorageSync('userId')
 	getPostList()
@@ -426,6 +427,7 @@ const schoolList = ref([
 		tag:'咖啡文化'
 	},
 ])
+
 </script>
 
 <template>
@@ -436,8 +438,20 @@ const schoolList = ref([
 	   <view class="index">
 	   	  <scroll-view scroll-y :scroll-top="scrollTop" style="height: calc(100vh);" @scroll="onScroll" @scrolltolower="scrolltolower">
 	   	        <view class="header">
-	   	            <view class="btn" @tap="gotoPostBar()">帖吧</view>
-	   	            <view class="btn" @tap="gotomaterial()">资料</view>
+	   	            <!-- <view class="btn" @tap="gotoPostBar()">帖吧</view>
+	   	            <view class="btn" @tap="gotomaterial()">资料</view> -->
+					<view class="btn" style="background-color: #C7F9DF;" @tap="gotoPostBar()">
+						<text style="color: #07A17F;">帖吧</text>
+						<image src="/static/postBar.png" ></image>
+					</view>
+					<view class="btn" style="background-color: #F9E4C7;" @tap="gotomaterial()">
+						<text style="color: #CB8409;">资料</text>
+						<image src="/static/material.png" ></image>
+					</view>
+					<view class="btn" style="background-color: #E2F1FC;" @tap="gotoAi()">
+						<text style="color: #0E90E0;">ai工具</text>
+						<image src="/static/ai.png" style="width: 78rpx;height: 78rpx; "></image>
+					</view>
 	   	        </view>
 	   	        <!-- 固定的 top 区域 -->
 	   	        <view class="top" :class="{ fixed: fixedTop }">
@@ -586,9 +600,9 @@ const schoolList = ref([
 				<view class="float" @tap="onTop()" :style="{ opacity: showTopButton ? 1 : 0 }">
 					<view class="item"><image class="huojian" src="../../static/火箭.png" :class="{ launching: isLaunching }"></image></view>
 				</view>
-				<view class="aiBox" @tap="gotoAi()">
+				<!-- <view class="aiBox" @tap="gotoAi()">
 					<view class="ai">AI</view>
-				</view>
+				</view> -->
 	   	    </scroll-view>
 			
 	   </view>
@@ -606,28 +620,6 @@ const schoolList = ref([
     background-color: #f5f5f5;
     height: 100%;
 	font-size: 28rpx;
-	.aiBox{
-		position: fixed;
-		right: 0;
-		bottom: 140rpx;
-		.ai{
-			width: 80rpx;
-			height: 128rpx;
-			background: linear-gradient(to right, #15ea71, 35%,#68cbdf);
-			opacity: 0.9;
-			border-radius: 80rpx 0 0 80rpx;
-			display: flex;
-			justify-content: center;
-			align-items: center;
-			color: #fff;
-			font-size: 34rpx;
-			box-shadow: -2rpx 0 10rpx rgba(0, 0, 0, 0.2);
-			transition: all 0.3s ease;
-			&:active {
-				transform: scale(0.95);
-			}
-		}
-	}
    .float{
 	   position: fixed;
 	   right: 30rpx;
@@ -667,22 +659,33 @@ const schoolList = ref([
 .header {
     display: flex;
     justify-content: space-around;
-    padding: 20rpx 0;
+    padding: 20rpx 46rpx;
     background-color: #fff;
 }
 
 .btn {
 	margin-top: 20rpx;
-    width: 250rpx;
-    height: 100rpx;
-    line-height: 100rpx;
-    text-align: center;
-    border-radius: 20rpx;
-	color: #fff;
-	box-shadow: 0 4rpx 10rpx rgba(87, 184, 122,0.2);
+    width: 168rpx;
+    height: 168rpx;
+    line-height: 72rpx;
+    // text-align: center;
+    border-radius: 15rpx;
+	box-shadow: 0 4rpx 10rpx rgba(87, 184, 122,0.1);
     font-weight: 600;
-    // background: linear-gradient(to top right, #57b87a, #b5f9c8);
-	background: linear-gradient(to bottom right, #46e769,20%, #8acfb2);
+	position: relative;
+	text{
+		font-size: 34rpx;
+		padding: 12rpx;
+	}
+	image{
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		padding: 10rpx;
+		width: 90rpx;
+		height: 90rpx;
+	}
+	// background: linear-gradient(to bottom right, #46e769,20%, #8acfb2);
 	transition: transform 0.2s ease-in-out;
 	//按住按钮后缩小
 	&:active {

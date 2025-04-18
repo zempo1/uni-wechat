@@ -13,7 +13,7 @@ onLoad(()=>{
 
 const gotomaterial = () => {
     uni.navigateTo({
-        url: '/pages/index/material/material'
+        url: '/pages/index/course/course'
     });
 };
 const gotoPostBar = () => {
@@ -212,7 +212,8 @@ const truncatedText = (text, length = 100) => {
 const previewImage = (image) =>{
 	console.log(image);
 	uni.previewImage({
-		urls:[image]
+		urls:[image],
+		showmenu:true
 	})
 }
 //触底加载帖子
@@ -315,7 +316,11 @@ const gotoAi = () =>{
 		url:'/pages/ai/ai'
 	})
 }
-
+const gotoAiChat = () =>{
+	uni.navigateTo({
+		url: '/pages/ai/aiChat/aiChat'
+	})
+}
 //学分汇总
 const spikLink = (url) =>{
 	uni.navigateTo({
@@ -449,8 +454,8 @@ const schoolList = ref([
 						<image src="/static/material.png" ></image>
 					</view>
 					<view class="btn" style="background-color: #E2F1FC;" @tap="gotoAi()">
-						<text style="color: #0E90E0;">ai工具</text>
-						<image src="/static/ai.png" style="width: 78rpx;height: 78rpx; "></image>
+						<text style="color: #2756EE;">ai工具</text>
+						<image src="/static/ai.png" style="width: 72rpx;height: 72rpx; margin-right: 4rpx;margin-bottom: 4rpx;"></image>
 					</view>
 	   	        </view>
 	   	        <!-- 固定的 top 区域 -->
@@ -600,9 +605,9 @@ const schoolList = ref([
 				<view class="float" @tap="onTop()" :style="{ opacity: showTopButton ? 1 : 0 }">
 					<view class="item"><image class="huojian" src="../../static/火箭.png" :class="{ launching: isLaunching }"></image></view>
 				</view>
-				<!-- <view class="aiBox" @tap="gotoAi()">
-					<view class="ai">AI</view>
-				</view> -->
+				<view class="aiBox" @tap="gotoAiChat()">
+					<view class="ai"></view>
+				</view>
 	   	    </scroll-view>
 			
 	   </view>
@@ -620,6 +625,19 @@ const schoolList = ref([
     background-color: #f5f5f5;
     height: 100%;
 	font-size: 28rpx;
+	.aiBox{
+		position: fixed;
+		right: 2rpx;
+		bottom: 126rpx;
+		.ai{
+			width: 100rpx;
+			height: 100rpx;
+			background: url(../../static/机器人.png) no-repeat  center center;
+			background-size: cover;
+			border-radius: 50%;
+			border: 1px solid #68cbdf;
+		}
+	}
    .float{
 	   position: fixed;
 	   right: 30rpx;

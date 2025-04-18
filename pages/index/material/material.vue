@@ -1,7 +1,10 @@
 <script setup>
     import {getFileList,viewFile,searchFile} from '@/api/file.js'
 	
-	onLoad(()=>{
+	onLoad((option)=>{
+		console.log(option);
+		courseName.value=option.course
+		console.log(courseName.value);
 		getList()
 	})
 	// 监听滚动事件
@@ -14,6 +17,7 @@
 	const fileId = ref('')
 	const limit = ref(6)
 	const sortType = ref(1)
+	const courseName = ref('')
 	const noData = ref(false)
 	const getList = async () =>{
 		const res = await getFileList({
@@ -21,7 +25,7 @@
 			fileId:fileId.value,
 			limit:limit.value,
 			sortType:sortType.value,
-			courseName:''
+			courseName:courseName.value
 		})
 		console.log(res);
 		list.value = [...list.value,...res.data]
@@ -175,7 +179,7 @@
    				fileId:'',
    				limit:limit.value,
    				sortType:sortType.value,
-   				courseName:''
+   				courseName:courseName.value
    			}).then(res=>{
    				console.log(res);
    				paging.value.complete(res.data);
@@ -194,7 +198,7 @@
 			<custom-refresher :status="refresherStatus" />
 		</template>
 		<template #top style=" box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">
-			<uni-search-bar
+			<!-- <uni-search-bar
 			  radius="5"
 			  v-model="keyword"
 			  placeholder="请输入关键词"
@@ -203,7 +207,7 @@
 			  cancelButton="none"
 			  :radius="100"
 			  @confirm="search"
-			/>
+			/> -->
 			<view class="tabs">
 				<view class="tab" :class="{ active: activeFilter === 1 }" @tap="setActiveFilter(1)">
 					<text>下载量倒序</text>
@@ -230,7 +234,6 @@
 								<text class="file-size">文件大小：{{calFileSize(item.fileSize)}}</text>
 								<text class="file-Count">浏览量：{{calReadCount(item.downloadCount)}}</text>
 							</view>
-					       
 					    </view>
 					</view>
 				</view>

@@ -28,7 +28,8 @@
 	const previewImage = (index) => {
 		uni.previewImage({
 			urls: comPost.value.images,
-			current: index
+			current: index,
+			showmenu:true
 		})
 	}
 	//联系卖家

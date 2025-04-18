@@ -129,6 +129,12 @@
 				//只保留arrPicture中的imageId
 				arrPicture.value = arrPicture.value.map(item => item.imageId)
 				console.log(arrPicture.value);
+				//发布中
+				uni.showLoading({
+						title: '发布中...',
+						mask: true
+					})
+				//发送请求
 				const res=await apiPost({
 						userId:uni.getStorageSync('userId'),
 						title:formData.value.title,
@@ -138,6 +144,7 @@
 						images:arrPicture.value
 					})
 					console.log(res);
+					uni.hideLoading();
 					formData.value.title = ''
 					formData.value.content = ''
 					index.value = 0
@@ -153,7 +160,6 @@
 							url: '/pages/index/index'
 						})
 					}, 500)
-
             }).catch((err) => {
                 console.log(err)
             });
@@ -201,7 +207,7 @@
 			<text>#添加话题</text>
 			<view class="pick">
 				<picker @change="pickTopic" :value="index" :range="topicArr">
-					<view style="color:#d52c29;">
+					<view style="color:#07A17F;">
 					{{topic}}
 					<uni-icons type="arrowright" size="24" style="vertical-align: middle;"></uni-icons>
 					</view>
@@ -212,7 +218,7 @@
 			<text>校区</text>
 			<view class="pick">
 				<picker @change="pickSchool" :value="schoolIndex" :range="schoolArr">
-					<view style="color:#d52c29;">
+					<view style="color:#07A17F;">
 					{{school}}
 					<uni-icons type="arrowright" size="24" style="vertical-align: middle;"></uni-icons>
 					</view>
@@ -259,7 +265,7 @@
     .btn {
         width: 140rpx;
         height: 60rpx;
-        background-color: #89abf4;
+        background-color: #5CC280;
         color: #fff;
         font-weight: 700;
         font-size: 26rpx;

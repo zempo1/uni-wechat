@@ -2,7 +2,7 @@
 import { nextTick, onMounted,getCurrentInstance } from 'vue';
 import {onShareAppMessage} from '@dcloudio/uni-app'
 import {getOtherUserInfo} from '@/api/user.js'
-import {apiPostDetail,apiPostCommentList,apiPostCollect,apiPostLike,apiPostComment,apiCommentLike,apiPostCommentChildList,apiCommentReply,apiCommentDelete} from '../../api/post.js'
+import {apiPostDetail,apiPostCommentList,apiPostCollect,apiPostLike,apiPostComment,apiCommentLike,apiPostCommentChildList,apiCommentReply,apiCommentDelete,apiPostDelete} from '../../api/post.js'
 import {baseUrl} from '../../utils/request.js'
 import {deleteFile} from '@/api/file.js'
 import {formatTimestamp,formatDate} from '@/common/formatTime.js'
@@ -10,10 +10,14 @@ import {formatTimestamp,formatDate} from '@/common/formatTime.js'
 	const userAvatar = ref()
 	const userName = ref()
 	const schoolCode = ref()
+	const userId = ref()
+	const isAdmin = ref(false)
 	onLoad(async (option)=>{
 		postId.value = option.postId
 		userAvatar.value = option.userAvatar
 		userName.value = option.userName
+		userId.value = uni.getStorageSync('userId')
+		isAdmin.value = uni.getStorageSync('isAdmin')
 		getPostList();
 		getPostCommentList();
 	})
@@ -39,6 +43,7 @@ import {formatTimestamp,formatDate} from '@/common/formatTime.js'
 		});
 	})
 	//查询帖子数据
+	const posterId = ref('')//发帖者Id
 	const getPostList = async()=>{
 		const res = await apiPostDetail({
 			userId: uni.getStorageSync('userId'),
@@ -47,6 +52,7 @@ import {formatTimestamp,formatDate} from '@/common/formatTime.js'
 		console.log(res);
 		post.value = res.data;
 		schoolCode.value = res.data.schoolCode
+		posterId.value=res.data.userId
 		//获取发帖者头像
 		const res2 = await getOtherUserInfo({
 			userId: uni.getStorageSync('userId'),
@@ -79,7 +85,8 @@ import {formatTimestamp,formatDate} from '@/common/formatTime.js'
 	const previewImage = (index) => {
 		uni.previewImage({
 			urls: post.value.images,
-			current: index
+			current: index,
+			showmenu:true
 		})
 	}
 	const starNumber = ref(0)
@@ -478,7 +485,8 @@ const clickCommentHeart = async (item,type) =>{
 	const previewCommentImage = (image) =>{
 		console.log(image);
 		uni.previewImage({
-			urls:[image]
+			urls:[image],
+			showmenu:true
 		})
 	}
 	
@@ -586,6 +594,43 @@ const clickCommentHeart = async (item,type) =>{
 			url:'/pages/postContent/postContent?postId='+postId.value+'&userAvatar='+userAvatar.value+'&userName='+userName.value,
 		}
 	})
+	//删除帖子
+	const popupDelPost = ref()
+	const openDel = () =>{
+		popupDelPost.value.open()
+	}
+	const delPost = () =>{
+		console.log(2);
+		uni.showModal({
+			title: '提示',
+			content: '确定要删除该帖子吗？',
+			confirmColor: '#5cc280',
+			success: async (re) => {
+				if (re.confirm) {
+					const res = await apiPostDelete({
+						userId: uni.getStorageSync('userId'),
+						postId: postId.value,
+						schoolCode: schoolCode.value
+					})
+					console.log(res);
+					if(res.code===200){
+						uni.showToast({
+							title: '删除成功',
+							icon: 'success'
+						})
+						setTimeout(() => {
+							uni.reLaunch({
+							    url: '/pages/index/index'
+							})
+						}, 300)
+					}
+		        }		
+			}	
+		})		
+	}
+	const popClose = () =>{
+		popupDelPost.value.close()
+	}
 </script>
 
 <template>
@@ -593,10 +638,15 @@ const clickCommentHeart = async (item,type) =>{
 		<!-- 内容部分 -->
 		<scroll-view scroll-y style="height: 100vh;" @scrolltolower="scrolltolower">
 		<view class="header">
-			<image class="avatar" :src="userAvatar || '../../static/avatar0.png'" mode="aspectFill"></image>
-			<view class="username-time">
-				<text class="username">{{userName}}</text>
-				<text class="time">{{formatDate(post.createTime)}}</text>
+			<view class="left">
+				<image class="avatar" :src="userAvatar || '../../static/avatar0.png'" mode="aspectFill"></image>
+				<view class="username-time">
+					<text class="username">{{userName}}</text>
+					<text class="time">{{formatDate(post.createTime)}}</text>
+				</view>
+			</view>
+			<view class="right" v-if="posterId===userId || isAdmin" @tap="openDel()">
+				<uni-icons type="more-filled" color="#333" size="30"></uni-icons>
 			</view>
 		</view>
 		<view class="title">
@@ -809,11 +859,20 @@ const clickCommentHeart = async (item,type) =>{
 				<uni-icons type="wallet" size="22" color="#666"></uni-icons>
 				<text>复制</text>
 			</view>
-			<view v-if="isShowDel" class="del" @tap="del()">
+			<view v-if="isShowDel || isAdmin" class="del" @tap="del()">
 				<uni-icons type="trash" size="22" color="red"></uni-icons>
 				<text>删除</text>
 			</view>
 			<view class="cancel" @tap="popLongtapClose()"><text>取消</text></view>
+		</view>
+	</uni-popup>
+	<uni-popup ref="popupDelPost" type="bottom" border-radius="8rpx 8rpx 0 0"  >
+		<view class="pop-contain">
+			<view class="del" @tap="delPost()">
+				<uni-icons type="trash" size="22" color="red"></uni-icons>
+				<text>删除</text>
+			</view>
+			<view class="cancel" @tap="popClose()"><text>取消</text></view>
 		</view>
 	</uni-popup>
 </template>
@@ -826,8 +885,13 @@ const clickCommentHeart = async (item,type) =>{
 .header {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	// margin: 20rpx 0;
 	padding: 20rpx;
+	.left{
+		display: flex;
+		align-items: center;
+	}
 	.avatar {
 		width: 100rpx;
 		height: 100rpx;

@@ -14,24 +14,36 @@
 				upper-threshold="100"
 				:scroll-top="scrollTop"
 				:scroll-with-animation="enableAnimation">
-				<!-- <view class="timer">2022-08-02 11:08:07</view> -->
-				<view :class="item.toUserId !== otherUserInfo.otherId ? 'userbox2' : 'userbox'" v-for="(item, index) in chatList"
-					:key="item.messageId" :id='"item"+index'>
-					<view :class="item.toUserId !== otherUserInfo.otherId ? 'nameInfo2' : 'nameInfo'">
-						<view style="font-size: 28rpx">{{ item.userId === otherUserInfo.otherId ?otherUserInfo.otherUserName:userName  }}</view>
-						<view :class="item.toUserId !== otherUserInfo.otherId  ? 'contentText2' : 'contentText'">
-							{{ item.content }}
+				<template v-for="(item, index) in chatList" :key="item.messageId">
+					<!-- 显示时间 -->
+					<view v-if="shouldShowTime(index)" class="time-divider">
+						<text>{{ item.time }}</text>
+					</view>
+					<!-- 消息内容 -->
+					<view :class="item.toUserId !== otherUserInfo.otherId ? 'userbox2' : 'userbox'" :id='"item"+index'>
+						<view :class="item.toUserId !== otherUserInfo.otherId ? 'nameInfo2' : 'nameInfo'">
+							<view style="font-size: 28rpx">{{ item.userId === otherUserInfo.otherId ?otherUserInfo.otherUserName:userName  }}</view>
+							<view :class="item.toUserId !== otherUserInfo.otherId  ? 'contentText2' : 'contentText'" v-if="item.type=='text'">
+								{{ item.content }}
+							</view>
+							<view  @tap="preview(item.content)" v-else :class="[item.toUserId !== otherUserInfo.otherId ? 'image-message-right' : 'image-message-left']">
+								<image :src="item.content" mode="widthFix" style="max-width: 200rpx;" @tap="previewImage(item.content)"></image>
+							</view>
+						</view>
+						<view>
+							<image class="touxiang" :src="item.userId === otherUserInfo.otherId ? otherUserInfo.otherAvatar : userAvatar" />
 						</view>
 					</view>
-					<view>
-						<image class="touxiang" :src="item.userId === otherUserInfo.otherId ? otherUserInfo.otherAvatar : userAvatar" />
-					</view>
-				</view>
+				</template>
 			</scroll-view>
 			<view class="bottom">
 				<textarea :cursor-spacing="110" name="输入框" id="1" cols="20" rows="5" class="areaBox" v-model="inputValue"></textarea>
+				<view class="img" @tap="chooseImage">
+					<uni-icons type="image" size="38"></uni-icons>
+				</view>
 				<button 
-					@click="sendOut">发送</button>
+					@click="sendOut">发送
+				</button>
 			</view>
 		</view>
 	</view>
@@ -42,7 +54,9 @@ import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { throttle } from '@/utils/throttle.js';
 import {apiPostChat} from '@/api/message.js'
 import {getOtherUserInfo} from '@/api/user.js'
-// 数据定义
+import {formatTimestamp} from '@/common/formatTime.js'
+import {baseUrl} from '../../utils/request.js'
+// 数据定义 
 const chatList = ref([]); //聊天信息
 const userName = ref(""); //自己用户名
 const userId = ref('')//自己用户Id
@@ -114,7 +128,7 @@ const onScrollToUpper = () => {
 
 // 获取历史记录
 const messageId = ref('');//上一次查询结果最后一条消息的id
-const limit = ref(20)
+const limit = ref(10)
 const getlishiList = async (type, oldPosition) => {
     const res = await apiPostChat({
         userId: uni.getStorageSync('userId'),
@@ -128,21 +142,6 @@ const getlishiList = async (type, oldPosition) => {
      chatList.value.unshift(...a)
 	 console.log(chatList.value);
     if (type == 1) { //滚动到顶部触发方法会传入1
-        // nextTick(() => {
-        //     // 获取新的第一条消息位置
-        //     const query = uni.createSelectorQuery();
-        //     query.select(`#item${a.length}`).boundingClientRect(data => {
-        //         if (data && oldPosition) {
-        //             // 计算新的滚动位置
-        //             const newScrollTop = data.top - oldPosition;
-        //             scrollTop.value = newScrollTop;
-        //             // 在下一个tick恢复滚动动画
-        //             nextTick(() => {
-        //                 enableAnimation.value = true;
-        //             });
-        //         }
-        //     }).exec();
-        // });
         return;
     }
     setPageScrollTo(); //滚动到最底部
@@ -158,9 +157,78 @@ const setPageScrollTo = () => {
     console.log('设置滚动到底部', randomValue);
   });
 };
+//选择图片
+const imageBase64 = ref('')
+const chooseImage = () => {
+	uni.chooseImage({
+		count: 1, // 默认最多选择1张图片
+		sizeType: ['original', 'compressed'], // 可以指定是原图还是压缩图，默认二者都有
+		sourceType: ['album', 'camera'], // 可以指定来源是相册还是相机，默认二者都有
+		success: async (res) => {
+			const tempFilePaths = res.tempFilePaths;
+			console.log(tempFilePaths);
+			//发送中
+			uni.showLoading({
+				title: '发送中'
+			})
+			// 上传图片
+			await uni.uploadFile({
+				url: baseUrl + '/api/v1/community/comment/image',
+				method: 'post',
+				header: {
+					"Content-Type": "application/json" , 
+					"Authorization": uni.getStorageSync('accessToken')
+				},
+				filePath: tempFilePaths[0],
+				name: 'image',
+				formData: {
+					userId: uni.getStorageSync('userId')
+				},
+				success: (res2) => {
+					const time = formatTimestamp(new Date().getTime()) ;
+					console.log(JSON.parse(res2.data));
+					const imageUrl = JSON.parse(res2.data).data.imageUrl;
+					ws.value.send({
+						userId: uni.getStorageSync('userId'),
+						toUserId: otherUserInfo.value.otherId,
+						type: 'image',
+						content: imageUrl
+					})
+					console.log('发送',imageUrl);
+					chatList.value.push({
+					    content: imageUrl,
+					    toUserId: otherUserInfo.value.otherId,
+					    userId: userId.value,
+						time: time
+					});
+					uni.hideLoading()
+					setPageScrollTo(); //滚动到最底部
+				},
+				fail: (err) => {
+					console.log(err);
+					uni.showToast({
+						title: '上传失败,请重新上传',
+						icon: 'error'
+					})
+				}
+			})
+		}
+	});
+	
+};
+const preview = (image) =>{
+	console.log(image);
+	uni.previewImage({
+		urls:[image],
+		showmenu:true
+	})
+}
 
 // 发送消息
 const sendOut = () => {
+	//获取当前日期，只需要精确到年月日
+	const time = formatTimestamp(new Date().getTime()) ;
+	console.log(time);
   if (!inputValue.value.trim()) {
     uni.showToast({
       title: '请输入内容',
@@ -170,6 +238,7 @@ const sendOut = () => {
   }
   console.log(inputValue.value);
   // 使用全局WebSocket实例发送消息
+  
   ws.value.send({
 	userId: uni.getStorageSync('userId'),
     toUserId: otherUserInfo.value.otherId,
@@ -181,12 +250,23 @@ const sendOut = () => {
     content: inputValue.value,
     toUserId: otherUserInfo.value.otherId,
     userId: userId.value,
+	type: 'text',
+	time: time
   });
   
   inputValue.value = ''; //点击发送后清空输入框
   
   // 确保消息添加到列表后再滚动
   setPageScrollTo(); //滚动到最底部
+};
+
+// 判断是否需要显示时间
+const shouldShowTime = (index) => {
+  if (index === 0) return true;
+    // const currentTime = chatList.value[index].time.replace(" ", "T");
+    const currentTime = new Date(chatList.value[index].time.replace(" ", "T")).getTime();
+    const prevTime = new Date(chatList.value[index - 1].time.replace(" ", "T")).getTime();
+    return (currentTime - prevTime) > 5 * 60 * 1000; // 5分钟
 };
 
 // 监听WebSocket消息
@@ -257,6 +337,9 @@ defineExpose({
 		padding: 15rpx 30rpx;
 		box-sizing: border-box;
 		box-shadow: 0 -2rpx 4rpx rgba(0, 0, 0, 0.05);
+		.img{
+			margin-right: 6rpx;
+		}
 	}
 
 	.bottom button {
@@ -276,11 +359,12 @@ defineExpose({
        
 	}
 
-	.timer {
+	.time-divider {
+		width: 100%;
 		text-align: center;
+		margin: 20rpx 0;
 		color: #999999;
 		font-size: 24rpx;
-		margin: 20rpx 0;
 	}
 
 	/* 发送的信息样式 */
@@ -354,5 +438,33 @@ defineExpose({
 		line-height: 1.4;
 		box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
 	}
+
+	/* 图片消息样式 */
+	.image-message-left {
+		background-color: transparent;
+		display: inline-block;
+		border-radius: 8rpx;
+		max-width: 70%;
+		margin: 10rpx 0;
+		overflow: hidden;
+	}
+
+	.image-message-right {
+		background-color: transparent;
+		display: inline-block;
+		border-radius: 8rpx;
+		max-width: 70%;
+		margin: 10rpx 0;
+		overflow: hidden;
+	}
+
+	.image-message-left image,
+	.image-message-right image {
+		display: block;
+		border-radius: 8rpx;
+		box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
+	}
 </style>
+
+
 

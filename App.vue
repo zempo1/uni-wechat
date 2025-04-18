@@ -3,6 +3,7 @@
 	// WebSocket全局连接实例和配置
 	// const path = "wss://8.134.200.160:21611/ws?code="
 	const path = "wss://aseubel.xyz:21611/ws?code="
+	// const path = "wss://192.168.80.1/ws?code="
 	let ws = null
 	let timeoutnum = null
 	let closeType = 1
@@ -12,7 +13,8 @@
 	  //实例
 	  ws = uni.connectSocket({
 	    url: path+uni.getStorageSync('userId'),
-	    complete: () => {}
+	    complete: () => {},
+	    timeout: 60000
 	  });
 	  
 	  //链接成功

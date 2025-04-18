@@ -10,6 +10,16 @@ export const deleteFile = (filePath) => {
 		}
     })
 }
+//查询课程列表
+export const getCourseList = (data={}) => {
+    return request({
+        url: '/api/v1/file/course',
+        data,
+		header: {
+		    'Authorization': uni.getStorageSync('accessToken')
+		}
+    })
+}
 //查询文件列表
 export const getFileList = (data={}) => {
     return request({

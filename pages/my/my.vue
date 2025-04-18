@@ -46,6 +46,7 @@ const handleLogin = async () => {
 			   uni.setStorageSync('accessToken',loginResult.data.accessToken)
 			   //存入学校代号
 			   uni.setStorageSync('schoolCode',loginResult.data.school.schoolCode)
+			   uni.setStorageSync('isAdmin',loginResult.data.isAdmin) //是否为管理员
 			   uni.showToast({
 			    title: '登录成功',
 			    icon: 'none'
@@ -219,6 +220,7 @@ const loginOut = () => {
 				uni.removeStorageSync('userName')
 				uni.removeStorageSync('avatar')
 				uni.removeStorageSync('schoolCode')
+				uni.removeStorageSync('isAdmin')
 	      	    user.value.avatar = ''
 	      	    user.value.nickname = ''
 	        }

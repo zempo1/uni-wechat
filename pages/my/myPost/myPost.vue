@@ -21,9 +21,9 @@ const tagColors = {
   '休闲': 'linear-gradient(to top,#2196F3,#99d4fb)',
   '学习': 'linear-gradient(to top,#9C27B0,#e7aeff)',
   '运动': 'linear-gradient(to top,#07cb73,#0aff91)',
-  '游戏': 'linear-gradient(to top,#8BC34A,#b9f55d)',
+  '选课': 'linear-gradient(to top,#8BC34A,#b9f55d)',
   '干饭': 'linear-gradient(to top,#dfc833,#e9ff86)',
-  '旅行': 'linear-gradient(to top,#FF5722,#ffb870)',
+  '寻物': 'linear-gradient(to top,#FF5722,#ffb870)',
   '其他': 'linear-gradient(to top,#9E9E9E,#c6c6c6)',
 };
 

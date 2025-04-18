@@ -127,6 +127,29 @@
 			{
 				"navigationBarTitleText" : ""
 			}
+		},
+		{
+			"path" : "pages/index/course/course",
+			"style" : 
+			{
+				"navigationBarTitleText" : "资料列表",
+				"navigationBarBackgroundColor": "#68e7a4"
+			}
+		},
+		{
+			"path" : "pages/index/course/courseSearch/courseSearch",
+			"style" : 
+			{
+				"navigationBarTitleText" : "学科搜索结果",
+				"navigationBarBackgroundColor": "#68e7a4"
+			}
+		},
+		{
+			"path" : "pages/ai/aiChat/aiChat",
+			"style" : 
+			{
+				"navigationBarTitleText" : "AI管家"
+			}
 		}
 	],
 	"globalStyle": {
